@@ -1,4 +1,4 @@
-# El Arañador — Recuperación de Información Textual
+# El Arañador Recuperación de Información Textual
 
 Proyecto del curso **Recuperación de Información Textual** (TEC) sobre el tema **videojuegos**.
 
