@@ -36,3 +36,6 @@ repository/*
 
 # Environment
 .env
+
+# Pytest
+.pytest_cache/
