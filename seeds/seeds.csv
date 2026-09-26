@@ -1,11 +1,66 @@
-seed_id,url,subtema
-seed01,https://store.steampowered.com/,
-seed02,https://en.wikipedia.org/wiki/List_of_video_games_listed_among_the_best,
-seed03,https://www.ign.com/playlist/rchnemesis/lists/top-100-indie-games,
-seed04,https://www.metacritic.com/game/,
-seed05,https://store.epicgames.com/?lang=es-ES,
-seed06,https://www.imdb.com/list/ls507147151/,
-seed07,https://www.gamesradar.com/video-game-release-dates/,
-seed08,https://www.gamespot.com/,
-seed09,https://www.polygon.com/,
-seed10,https://en.wikipedia.org/wiki/Video_game,
+seed_id,url,subtema,scope_mode,idioma,crawler
+seed01,https://store.steampowered.com/,tienda y catalogo,domain,en,custom
+seed02,https://en.wikipedia.org/wiki/List_of_video_games_listed_among_the_best,enciclopedia general,topical,en,custom
+seed03,https://www.ign.com/playlist/rchnemesis/lists/top-100-indie-games,noticias y resenas,domain,en,custom
+seed04,https://www.metacritic.com/game/,resenas y puntuaciones,domain,en,custom
+seed05,https://store.epicgames.com/?lang=es-ES,tienda y catalogo,domain,es,custom
+seed06,https://www.imdb.com/list/ls507147151/,listas y cultura,topical,en,custom
+seed07,https://www.gamesradar.com/video-game-release-dates/,noticias y lanzamientos,domain,en,custom
+seed08,https://www.gamespot.com/,noticias y resenas,domain,en,custom
+seed09,https://www.polygon.com/,noticias y resenas,domain,en,custom
+seed10,https://en.wikipedia.org/wiki/Video_game,enciclopedia general,topical,en,custom
+seed11,https://es.wikipedia.org/wiki/Videojuego,enciclopedia general,topical,es,scrapy
+seed12,https://es.wikipedia.org/wiki/Anexo:Videojuegos_m%C3%A1s_vendidos,enciclopedia general,topical,es,scrapy
+seed13,https://es.wikipedia.org/wiki/Categor%C3%ADa:Videojuegos,enciclopedia general,topical,es,scrapy
+seed14,https://en.wikipedia.org/wiki/Category:Video_games,enciclopedia general,topical,en,custom
+seed15,https://en.wikipedia.org/wiki/List_of_best-selling_video_games,enciclopedia general,topical,en,custom
+seed16,https://minecraft.wiki/,wiki de juego,domain,en,custom
+seed17,https://terraria.wiki.gg/,wiki de juego,domain,en,scrapy
+seed18,https://www.mariowiki.com/,wiki de franquicia,domain,en,custom
+seed19,https://zeldawiki.wiki/wiki/Main_Page,wiki de franquicia,domain,en,scrapy
+seed20,https://oldschool.runescape.wiki/,wiki de juego,domain,en,custom
+seed21,https://runescape.wiki/,wiki de juego,domain,en,scrapy
+seed22,https://warcraft.wiki.gg/,wiki de franquicia,domain,en,custom
+seed23,https://stardewvalleywiki.com/Stardew_Valley_Wiki,wiki de juego,domain,en,scrapy
+seed24,https://bg3.wiki/,wiki de juego,domain,en,custom
+seed25,https://wiki.warframe.com/,wiki de juego,domain,en,scrapy
+seed26,https://wiki.leagueoflegends.com/en-us/,wiki de juego,domain,en,custom
+seed27,https://eldenring.wiki.gg/,wiki de juego,domain,en,scrapy
+seed28,https://www.ssbwiki.com/,wiki de franquicia,domain,en,custom
+seed29,https://nookipedia.com/wiki/Main_Page,wiki de franquicia,domain,en,scrapy
+seed30,https://splatoonwiki.org/wiki/Main_Page,wiki de franquicia,domain,en,custom
+seed31,https://wikirby.com/wiki/Kirby_Wiki,wiki de franquicia,domain,en,scrapy
+seed32,https://www.metroidwiki.org/wiki/Main_Page,wiki de franquicia,domain,en,custom
+seed33,https://fireemblemwiki.org/wiki/Main_Page,wiki de franquicia,domain,en,scrapy
+seed34,https://www.pikminwiki.com/,wiki de franquicia,domain,en,custom
+seed35,https://strategywiki.org/wiki/Main_Page,guias y estrategias,domain,en,scrapy
+seed36,https://wiki.guildwars2.com/wiki/Main_Page,wiki de juego,domain,en,custom
+seed37,https://wiki.factorio.com/,wiki de juego,domain,en,scrapy
+seed38,https://rimworldwiki.com/,wiki de juego,domain,en,custom
+seed39,https://dontstarve.wiki.gg/,wiki de juego,domain,en,scrapy
+seed40,https://satisfactory.wiki.gg/,wiki de juego,domain,en,custom
+seed41,https://ark.wiki.gg/,wiki de juego,domain,en,scrapy
+seed42,https://hollowknight.wiki/w/Hollow_Knight_Wiki,wiki de juego,domain,en,custom
+seed43,https://ffxiv.consolegameswiki.com/wiki/FF14_Wiki,wiki de juego,domain,en,scrapy
+seed44,https://deadcells.wiki.gg/,wiki de juego,domain,en,custom
+seed45,https://calamitymod.wiki.gg/,wiki de juego,domain,en,scrapy
+seed46,https://riskofrain2.wiki.gg/,wiki de juego,domain,en,custom
+seed47,https://noita.wiki.gg/,wiki de juego,domain,en,scrapy
+seed48,https://oxygennotincluded.wiki.gg/,wiki de juego,domain,en,custom
+seed49,https://slaythespire.wiki.gg/,wiki de juego,domain,en,scrapy
+seed50,https://www.3djuegos.com/,noticias y resenas,domain,es,custom
+seed51,https://vandal.elespanol.com/,noticias y resenas,domain,es,scrapy
+seed52,https://www.hobbyconsolas.com/videojuegos,noticias y resenas,topical,es,custom
+seed53,https://as.com/meristation/,noticias y resenas,prefix,es,scrapy
+seed54,https://www.eurogamer.es/,noticias y resenas,domain,es,custom
+seed55,https://www.levelup.com/,noticias y resenas,domain,es,scrapy
+seed56,https://latam.ign.com/,noticias y resenas,domain,es,custom
+seed57,https://www.eurogamer.net/,noticias y resenas,domain,en,scrapy
+seed58,https://www.pcgamer.com/,noticias y resenas,domain,en,custom
+seed59,https://www.rockpapershotgun.com/,noticias y resenas,domain,en,scrapy
+seed60,https://gamerant.com/,noticias y guias,domain,en,custom
+seed61,https://www.thegamer.com/,noticias y guias,domain,en,scrapy
+seed62,https://kotaku.com/,noticias y cultura,domain,en,custom
+seed63,https://www.vg247.com/,noticias y guias,domain,en,scrapy
+seed64,https://www.siliconera.com/,noticias,domain,en,custom
+seed65,https://www.hardcoregaming101.net/,historia y retro,domain,en,scrapy
