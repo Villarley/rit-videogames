@@ -2,8 +2,6 @@
 
 Proyecto del curso **Recuperación de Información Textual** (TEC). Tema: **videojuegos**.
 
-**¿Vas a completar los 10 GB conjuntos?** Leé **[CORRER_CRAWL.md](CORRER_CRAWL.md)** (guía paso a paso para Windows, macOS y Linux).
-
 ## Integrantes
 
 - Sebastián Calvo Hernández
