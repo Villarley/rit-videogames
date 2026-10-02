@@ -77,7 +77,7 @@ class ProgressReporter:
         now = time.strftime("%H:%M:%S")
         print(
             f"PROGRESS {now} saved={snap.pages_saved_run}/{snap.pages_saved_total} "
-            f"text={target_part} "
+            f"project_text={target_part} "
             f"rate={snap.pages_per_sec:.2f}p/s {snap.mb_per_sec:.2f}MB/s "
             f"domains={snap.active_domains} inflight={snap.in_flight} "
             f"errors={snap.errors} blocked={snap.blocked_domains}",
@@ -99,7 +99,7 @@ def print_startup_banner(
     mode = "resuming" if resuming else "fresh"
     print(
         f"CRAWLER seeds={seeds_count} hosts={hosts_count} threads={threads} "
-        f"target={target_gb:g}GB db={db_path} text_root={text_root} "
+        f"project_target={target_gb:g}GB db={db_path} text_root={text_root} "
         f"mode={mode} free_disk={free_disk_gb:.1f}GB",
         flush=True,
     )

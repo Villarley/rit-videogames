@@ -377,7 +377,10 @@ def detect_language(text: str) -> str:
     return "other"
 
 
-def extract(html: str, base_url: str) -> ExtractedPage:
+def extract(
+    html: str, base_url: str, *, collect_links: bool = True
+) -> ExtractedPage:
+    """Extract text, optionally skipping links when the caller owns extraction."""
     raw_html = html or ""
     root = _parse_html(raw_html)
     if root is None:
@@ -386,10 +389,11 @@ def extract(html: str, base_url: str) -> ExtractedPage:
     title = _extract_title(root)
 
     links: list[tuple[str, str]] = []
-    try:
-        links = _collect_links(root, base_url)
-    except Exception:
-        pass
+    if collect_links:
+        try:
+            links = _collect_links(root, base_url)
+        except Exception:
+            pass
 
     text = ""
     language = "other"

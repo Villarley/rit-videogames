@@ -9,13 +9,14 @@ from scrapy.exceptions import NotConfigured
 from twisted.internet import task
 
 from crawler.progress import free_disk_bytes
+from crawler.project_total import ProjectTotal
 
 _GB = 1024 ** 3
 _LOW_DISK_BYTES = 2 * _GB
 
 
 class TargetSizeExtension:
-    """Close spider when scrapy text bytes hit RIT_TARGET_GB or disk is low."""
+    """Close when combined project bytes reach the target or disk is low."""
 
     def __init__(self, crawler) -> None:  # noqa: ANN001
         self.crawler = crawler
@@ -23,6 +24,9 @@ class TargetSizeExtension:
         self._target_bytes = int(target_gb * _GB) if target_gb > 0 else 0
         self._text_root = crawler.settings.get("RIT_TEXT_ROOT", "repository")
         self._closed = False
+        self._loop = None
+        crawler.signals.connect(self.spider_opened, signal=signals.spider_opened)
+        crawler.signals.connect(self.spider_closed, signal=signals.spider_closed)
         crawler.signals.connect(self._on_response, signal=signals.response_received)
         crawler.signals.connect(self._on_item, signal=signals.item_scraped)
 
@@ -33,13 +37,27 @@ class TargetSizeExtension:
     def _on_response(self, response, request, spider) -> None:  # noqa: ANN001
         self._maybe_stop(spider)
 
+    def spider_opened(self, spider):
+        spider.rit_project_total = ProjectTotal(
+            self.crawler.settings.get("RIT_DB", "repository/crawl.db")
+        )
+        spider.rit_project_total.start()
+        self._loop = task.LoopingCall(self._maybe_stop, spider)
+        self._loop.start(1.0, now=False)
+
+    def spider_closed(self, spider, reason):
+        if self._loop is not None and self._loop.running:
+            self._loop.stop()
+        spider.rit_project_total.close()
+
     def _on_item(self, item, spider) -> None:  # noqa: ANN001
         self._maybe_stop(spider)
 
     def _maybe_stop(self, spider) -> None:  # noqa: ANN001
         if self._closed:
             return
-        text_bytes = int(getattr(spider, "rit_text_bytes", 0) or 0)
+        tracker = getattr(spider, "rit_project_total", None)
+        text_bytes = tracker.snapshot()[0] if tracker else int(getattr(spider, "rit_text_bytes", 0) or 0)
         if self._target_bytes > 0 and text_bytes >= self._target_bytes:
             self._closed = True
             self.crawler.engine.close_spider(spider, "target_reached")
@@ -67,6 +85,7 @@ class ProgressExtension:
         self._target_bytes = int(target_gb * _GB) if target_gb > 0 else 0
         self._loop: task.LoopingCall | None = None
         self._t0 = time.monotonic()
+        self._start_bytes = 0
         crawler.signals.connect(self.spider_opened, signal=signals.spider_opened)
         crawler.signals.connect(self.spider_closed, signal=signals.spider_closed)
 
@@ -75,6 +94,7 @@ class ProgressExtension:
         return cls(crawler)
 
     def spider_opened(self, spider) -> None:  # noqa: ANN001
+        self._start_bytes = int(getattr(spider, "rit_text_bytes", 0) or 0)
         spider.rit_rate_pages = 0
         spider.rit_rate_bytes = 0
         spider.rit_rate_t0 = time.monotonic()
@@ -116,12 +136,19 @@ class ProgressExtension:
         spider.rit_rate_t0 = now_mono
 
         gb = text_bytes / _GB
+        tracker = getattr(spider, "rit_project_total", None)
+        if tracker:
+            text_bytes, project_bps = tracker.snapshot()
+            gb = text_bytes / _GB
         if self._target_bytes > 0:
             pct = 100.0 * text_bytes / self._target_bytes
             remaining = max(0, self._target_bytes - text_bytes)
             # ETA from overall average since spider open.
             overall_elapsed = max(0.001, now_mono - self._t0)
-            overall_bps = text_bytes / overall_elapsed if text_bytes > 0 else 0.0
+            added_bytes = max(0, text_bytes - self._start_bytes)
+            overall_bps = added_bytes / overall_elapsed
+            if tracker:
+                overall_bps = project_bps
             if overall_bps > 0 and remaining > 0:
                 eta = _fmt_duration(remaining / overall_bps)
             elif remaining <= 0:
@@ -134,12 +161,16 @@ class ProgressExtension:
             target_part = f"{gb:.2f}GB (no target)"
 
         pending = _pending_requests(self.crawler)
+        avoided = (
+            self.crawler.stats.get_value("resume/already_stored", 0)
+            if self.crawler.stats is not None else 0
+        )
         now = time.strftime("%H:%M:%S")
         print(
             f"PROGRESS {now} saved={saved_run}/{saved_total} "
-            f"text={target_part} "
-            f"rate={pages_per_sec:.2f}p/s {mb_per_sec:.2f}MB/s "
-            f"pending_requests={pending} errors={errors}",
+            f"project_text={target_part} "
+            f"rate={pages_per_sec:.2f}p/s {mb_per_sec:.3f}MB/s "
+            f"pending_requests={pending} avoided={avoided} errors={errors}",
             flush=True,
         )
 
@@ -149,10 +180,12 @@ def _pending_requests(crawler) -> int:  # noqa: ANN001
     try:
         engine = crawler.engine
         n = 0
-        scheduler = getattr(engine, "scheduler", None)
+        slot = getattr(engine, "_slot", None)
+        scheduler = getattr(slot, "scheduler", None)
+        if scheduler is None:
+            scheduler = getattr(engine, "scheduler", None)
         if scheduler is not None:
             n += len(scheduler)
-        slot = getattr(engine, "_slot", None)
         if slot is not None:
             n += len(slot.inprogress)
         return int(n)

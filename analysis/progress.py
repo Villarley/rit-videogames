@@ -4,9 +4,10 @@ import argparse
 import sqlite3
 import sys
 from datetime import datetime, timezone
+from crawler.project_total import DEFAULT_TARGET_GB
 GB = 1024**3
 MIN_GB = 10.0
-GOAL_GB = 30.0
+GOAL_GB = DEFAULT_TARGET_GB
 
 # Host from URL in SQLite (http/https only).
 _DOMAIN_SQL = """

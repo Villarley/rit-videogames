@@ -12,6 +12,7 @@ from crawler.extractor import content_hash, extract
 from crawler.fetcher import Fetcher, RobotsCache
 from crawler.frontier import DomainScheduler, FrontierTask, domain_of
 from crawler.policies import CrawlPolicies
+from crawler.project_total import ProjectTotal
 from crawler.progress import (
     ProgressReporter,
     ProgressSnapshot,
@@ -81,6 +82,7 @@ class ThreadedCrawler:
         # Running counter initialized from DB at crawl start.
         self._text_bytes_total = 0
         self._pages_total_start = 0
+        self._project_total = None
 
         # Interval rate tracking for progress.
         self._rate_lock = threading.Lock()
@@ -90,6 +92,12 @@ class ThreadedCrawler:
 
     def crawl(self, seeds: list[SeedSpec]) -> str:
         start = time.monotonic()
+        self._project_total = ProjectTotal(self._repository.db_path)
+        self._project_total.start()
+        if self._target_reached():
+            self._project_total.close()
+            print("SUMMARY stop_reason=target_reached (combined project target)", flush=True)
+            return "target_reached"
         self._text_bytes_total = self._repository.text_bytes_total(
             self._crawler_source
         )
@@ -157,6 +165,7 @@ class ThreadedCrawler:
             progress_stop.set()
             reporter.stop()
             self._restore_sigint_handler()
+            self._project_total.close()
 
         elapsed = time.monotonic() - start
         with self._stats_lock:
@@ -176,7 +185,8 @@ class ThreadedCrawler:
         print(
             f"SUMMARY pages_saved={saved} pages_skipped={skipped} "
             f"errors={errors} elapsed_s={elapsed:.2f} "
-            f"text_gb={self._text_bytes_total / _GB:.3f} "
+            f"source_text_gb={self._text_bytes_total / _GB:.3f} "
+            f"project_text_gb={self._project_total.refresh() / _GB:.3f} "
             f"stop_reason={self._stop_reason}",
             flush=True,
         )
@@ -414,7 +424,7 @@ class ThreadedCrawler:
         words = len(extracted.text.split())
         hits, density = self._policies.topical_score(extracted.text)
         host_rule = self._policies.host_rule_for(url)
-        page_is_topical = self._policies.is_topical(extracted.text)
+        page_is_topical = self._policies.is_topical_score(hits, density)
 
         # Decide whether to save.
         save_page = True
@@ -620,7 +630,8 @@ class ThreadedCrawler:
     def _target_reached(self) -> bool:
         if self._target_bytes <= 0:
             return False
-        return self._text_bytes_total >= self._target_bytes
+        total = self._project_total.snapshot()[0] if self._project_total else self._text_bytes_total
+        return total >= self._target_bytes
 
     def _low_disk(self) -> bool:
         try:
@@ -644,10 +655,13 @@ class ThreadedCrawler:
             text_bytes = self._text_bytes_total
 
         pages_total = self._pages_total_start + saved_run
+        global_rate = mbs * 1024 * 1024
+        if self._project_total:
+            text_bytes, global_rate = self._project_total.snapshot()
         eta = None
-        if self._target_bytes > 0 and mbs > 0:
+        if self._target_bytes > 0 and global_rate > 0:
             remain = max(0, self._target_bytes - text_bytes)
-            eta = remain / (mbs * 1024 * 1024)
+            eta = remain / global_rate
 
         return ProgressSnapshot(
             pages_saved_run=saved_run,

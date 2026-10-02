@@ -9,6 +9,7 @@ from urllib.parse import urlparse
 
 from crawler.logger import setup_logger
 from crawler.policies import CrawlPolicies
+from crawler.project_total import DEFAULT_TARGET_GB
 from crawler.progress import free_disk_bytes, print_startup_banner
 from crawler.storage import Repository
 from crawler.threaded_crawler import SeedSpec, ThreadedCrawler
@@ -36,8 +37,8 @@ def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument(
         "--target-gb",
         type=float,
-        default=20.0,
-        help="Stop after this many GB of plain text (0 = no target)",
+        default=DEFAULT_TARGET_GB,
+        help="Combined project text target in GiB, both crawlers (0 = no target)",
     )
     parser.add_argument("--crawler-source", default="custom")
     parser.add_argument(

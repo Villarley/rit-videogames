@@ -16,6 +16,7 @@ Division of labour (course comparison):
 from __future__ import annotations
 
 from urllib.parse import urlparse
+from w3lib.url import canonicalize_url
 
 import scrapy
 from scrapy.http import TextResponse
@@ -28,6 +29,8 @@ from crawler.main import _load_seeds
 from crawler.policies import CrawlPolicies
 from crawler.storage import Repository
 from scrapy_crawler.items import PageItem
+from scrapy_crawler.middlewares import AlreadyStored
+from scrapy_crawler.recovery import recovery_log_context
 
 
 def _domain_of(url: str) -> str:
@@ -47,6 +50,7 @@ class VideogamesSpider(scrapy.Spider):
         self.policies: CrawlPolicies | None = None
         self._link_extractor = LinkExtractor()
         self._scheduled_by_domain: dict[str, int] = {}
+        self._scheduled_urls: set[str] = set()
         self._max_pages_per_domain = 100000
         self.rit_errors = 0
         self.rit_text_bytes = 0
@@ -62,6 +66,11 @@ class VideogamesSpider(scrapy.Spider):
     async def start(self):
         # Scrapy 2.13+: start() replaces start_requests().
         settings = self.settings
+        tracker = getattr(self, "rit_project_total", None)
+        target = settings.getfloat("RIT_TARGET_GB", 10.0) * 1024**3
+        if tracker and target > 0 and tracker.snapshot()[0] >= target:
+            from scrapy.exceptions import CloseSpider
+            raise CloseSpider("target_reached")
         seeds_path = settings.get("RIT_SEEDS", "seeds/seeds.csv")
         db_path = settings.get("RIT_DB", "repository/crawl.db")
         text_root = settings.get("RIT_TEXT_ROOT", "repository")
@@ -104,11 +113,29 @@ class VideogamesSpider(scrapy.Spider):
                     scope_mode=row["scope_mode"],
                     idioma=row["idioma"],
                 )
-            self._scheduled_by_domain = dict(
-                repo.pages_count_by_domain("scrapy")
-            )
+            saved_pages = repo.saved_pages("scrapy")
         finally:
             repo.close()
+
+        # SpiderState persists admissions with JOBDIR. Count canonical URLs,
+        # not repeated appearances in navigation menus or links at max depth.
+        state = getattr(self, "state", {})
+        self._scheduled_urls = state.setdefault("rit_admitted_urls_v1", set())
+        for page in saved_pages:
+            self._scheduled_urls.add(canonicalize_url(page["url"]))
+        self._scheduled_by_domain = {}
+        for url in self._scheduled_urls:
+            domain = _domain_of(url)
+            self._scheduled_by_domain[domain] = self._scheduled_by_domain.get(domain, 0) + 1
+
+        # Recover already observed seed redirects before queued requests run.
+        seeds_by_id = {row["seed_id"]: row for row in seed_rows}
+        for page in saved_pages:
+            seed = seeds_by_id.get(page["seed_id"])
+            if seed and page["depth"] == 0:
+                self._maybe_register_redirect_host(seed["url"], page["final_url"] or page["url"])
+
+        recover = settings.getbool("RIT_RECOVER_LINKS", False)
 
         for row in seed_rows:
             normalized = self.policies.normalize_url(row["url"])
@@ -124,7 +151,8 @@ class VideogamesSpider(scrapy.Spider):
             rule = self.policies.host_rule_for(normalized)
             scope_rule = rule.mode if rule else "seed"
             domain = _domain_of(normalized)
-            if domain and not self._try_schedule(domain):
+            if (domain and canonicalize_url(normalized) not in self._scheduled_urls
+                    and not self._try_schedule(domain, normalized)):
                 continue
             yield scrapy.Request(
                 normalized,
@@ -136,8 +164,47 @@ class VideogamesSpider(scrapy.Spider):
                     "anchor_text": "",
                     "parent_topical": True,
                     "scope_rule": scope_rule,
+                    "rit_recover_links": recover,
                 },
             )
+
+        if recover:
+            omitted, thin_depths = recovery_log_context(
+                settings.get("RIT_RECOVERY_LOG", "repository/logs/scrapy/crawl.log"))
+            # Thin/category pages were not stored, but may have useful links.
+            candidates = {page["url"]: page for page in saved_pages}
+            seed_by_host = {_domain_of(row["url"]): row["seed_id"] for row in seed_rows}
+            for page in saved_pages:
+                if page["depth"] == 0:
+                    seed_by_host[_domain_of(page["url"])] = page["seed_id"]
+            for url, depth in thin_depths.items():
+                rule = self.policies.host_rule_for(url)
+                if rule and url in omitted and url not in candidates:
+                    candidates[url] = {"url": url, "depth": depth, "parent_url": None,
+                        "seed_id": seed_by_host.get(_domain_of(url), ""), "scope_rule": rule.mode}
+            count = 0
+            for page in sorted(candidates.values(), key=lambda p: p["depth"] if p["depth"] is not None else max_depth):
+                depth = page["depth"]
+                url = page["url"]
+                if url not in omitted or depth is None or not 0 < depth < max_depth:
+                    continue
+                rule = self.policies.host_rule_for(url)
+                if rule is None or self.policies.is_denied(url):
+                    continue
+                # Prefix scope still applies; topical pages were admitted in
+                # the original run, so their original parent context is kept.
+                if rule.mode == "prefix" and not self.policies.link_in_scope(url, "", True)[0]:
+                    continue
+                if (canonicalize_url(url) not in self._scheduled_urls
+                        and not self._try_schedule(_domain_of(url), url)):
+                    continue
+                count += 1
+                yield scrapy.Request(url, callback=self.parse, errback=self.errback, meta={
+                    "seed_id": page["seed_id"], "parent_url": page["parent_url"],
+                    "scope_rule": page["scope_rule"], "depth": depth,
+                    "rit_recover_links": True,
+                })
+            self.logger.info("RECOVERY_CANDIDATES pages=%d (already scheduled repairs are deduplicated)", count)
 
     def parse(self, response):
         assert self.policies is not None
@@ -146,6 +213,12 @@ class VideogamesSpider(scrapy.Spider):
         parent_url = response.meta.get("parent_url")
         scope_rule = response.meta.get("scope_rule") or ""
         request_url = response.request.url if response.request else response.url
+        # Account for requests restored from a pre-fix queue once, too.
+        key = canonicalize_url(request_url)
+        if key not in self._scheduled_urls:
+            self._scheduled_urls.add(key)
+            domain = _domain_of(key)
+            self._scheduled_by_domain[domain] = self._scheduled_by_domain.get(domain, 0) + 1
 
         # Seed redirect to a new host: inherit the same host rule.
         if depth == 0:
@@ -163,11 +236,11 @@ class VideogamesSpider(scrapy.Spider):
             self.rit_pages_skipped += 1
             return
 
-        extracted = extract(response.text, response.url)
+        extracted = extract(response.text, response.url, collect_links=False)
         words = len(extracted.text.split())
         hits, density = self.policies.topical_score(extracted.text)
         host_rule = self.policies.host_rule_for(request_url)
-        page_is_topical = self.policies.is_topical(extracted.text)
+        page_is_topical = self.policies.is_topical_score(hits, density)
 
         save_page = True
         if words < self.policies.min_words:
@@ -225,7 +298,9 @@ class VideogamesSpider(scrapy.Spider):
             child_domain = _domain_of(normalized)
             if not child_domain:
                 continue
-            if not self._try_schedule(child_domain):
+            if depth >= self.policies.max_depth:
+                continue
+            if not self._try_schedule(child_domain, normalized):
                 continue
             enqueued += 1
             yield response.follow(
@@ -281,6 +356,8 @@ class VideogamesSpider(scrapy.Spider):
         )
 
     def errback(self, failure: Failure):
+        if failure.check(AlreadyStored):
+            return
         request = failure.request
         url = request.url if request is not None else "?"
         if failure.check(HttpError):
@@ -295,11 +372,15 @@ class VideogamesSpider(scrapy.Spider):
             )
         self.rit_errors += 1
 
-    def _try_schedule(self, domain: str) -> bool:
+    def _try_schedule(self, domain: str, url: str) -> bool:
+        key = canonicalize_url(url)
+        if key in self._scheduled_urls:
+            return False
         count = self._scheduled_by_domain.get(domain, 0)
         if count >= self._max_pages_per_domain:
             return False
         self._scheduled_by_domain[domain] = count + 1
+        self._scheduled_urls.add(key)
         return True
 
     def _maybe_register_redirect_host(

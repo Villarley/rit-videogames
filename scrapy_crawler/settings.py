@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 BOT_NAME = "rit_videogames_scrapy"
+REQUEST_FINGERPRINTER_CLASS = "scrapy_crawler.recovery.RecoveryFingerprinter"
 
 SPIDER_MODULES = ["scrapy_crawler.spiders"]
 NEWSPIDER_MODULE = "scrapy_crawler.spiders"
@@ -56,6 +57,11 @@ FEED_EXPORT_ENCODING = "utf-8"
 
 ITEM_PIPELINES = {
     "scrapy_crawler.pipelines.RepositoryPipeline": 300,
+}
+
+DOWNLOADER_MIDDLEWARES = {
+    # Filter completed replay requests before network/robots downloads.
+    "scrapy_crawler.middlewares.ResumeRepositoryMiddleware": 50,
 }
 
 EXTENSIONS = {

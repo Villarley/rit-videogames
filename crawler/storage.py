@@ -107,6 +107,17 @@ def _word_count(text: str) -> int:
 
 
 class Repository:
+    @property
+    def db_path(self) -> str:
+        return self._db_path
+
+    def saved_pages(self, crawler_source: str) -> list[dict]:
+        with self._lock:
+            return [dict(row) for row in self._conn.execute(
+                "SELECT url, final_url, seed_id, depth, parent_url, scope_rule FROM pages "
+                "WHERE crawler_source = ?", (crawler_source,),
+            )]
+
     def __init__(self, db_path: str, text_root: str) -> None:
         self._db_path = db_path
         self._text_root = Path(text_root)

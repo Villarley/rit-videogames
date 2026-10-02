@@ -208,3 +208,33 @@ class TestIsTopical:
 
     def test_cooking_paragraph_not_topical(self, policies: CrawlPolicies) -> None:
         assert policies.is_topical(self.COOKING_PARAGRAPH) is False
+
+
+@pytest.mark.parametrize("hits,density,expected", [
+    (4, 3.0, False), (5, 2.999, False), (5, 3.0, True), (6, 4.0, True),
+])
+def test_precomputed_topical_thresholds(hits, density, expected):
+    assert CrawlPolicies().is_topical_score(hits, density) is expected
+
+
+@pytest.mark.parametrize("text,hits,tokens", [
+    ("", 0, 0),
+    ("video game video-game video_game", 6, 6),
+    ("a a a", 1, 3),
+    ("xvideo gamepad", 1, 2),
+    ("GAME game games", 2, 3),
+])
+def test_phrase_count_preserves_substrings_and_nonoverlap(text, hits, tokens):
+    policies = CrawlPolicies(scope_keywords=["video_game", "video-game", "game", "a a"])
+    expected_density = hits / tokens * 1000.0 if tokens else 0.0
+    assert policies.topical_score(text) == (hits, expected_density)
+
+
+def test_custom_thresholds_and_keyword_mutation():
+    policies = CrawlPolicies(topical_min_hits=1, topical_min_density=500)
+    assert policies.is_topical("game recipe")
+    policies.scope_keywords[:] = ["recipe"]
+    assert policies.topical_score("recipe recipe") == (2, 1000.0)
+    assert not policies.is_topical("game game")
+    policies.topical_min_hits = 3
+    assert not policies.is_topical_score(2, 1000.0)

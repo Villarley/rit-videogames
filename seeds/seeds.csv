@@ -64,3 +64,122 @@ seed62,https://kotaku.com/,noticias y cultura,domain,en,custom
 seed63,https://www.vg247.com/,noticias y guias,domain,en,scrapy
 seed64,https://www.siliconera.com/,noticias,domain,en,custom
 seed65,https://www.hardcoregaming101.net/,historia y retro,domain,en,scrapy
+seed66,https://bulbapedia.bulbagarden.net/wiki/Main_Page,wiki de franquicia,domain,en,custom
+seed67,https://en.uesp.net/wiki/Main_Page,wiki de franquicia,domain,en,scrapy
+seed68,https://www.pcgamingwiki.com/wiki/Main_Page,base de conocimiento y guias,domain,en,custom
+seed69,https://tcrf.net/,historia y contenido de videojuegos,domain,en,scrapy
+seed70,https://www.halopedia.org/,wiki de franquicia,domain,en,custom
+seed71,https://www.destinypedia.com/,wiki de franquicia,domain,en,scrapy
+seed72,https://fallout.wiki/,wiki de franquicia,domain,en,custom
+seed73,https://dwarffortresswiki.org/,wiki de juego,domain,en,scrapy
+seed74,https://pzwiki.net/wiki/Main_Page,wiki de juego,domain,en,custom
+seed75,https://wiki.teamfortress.com/wiki/Main_Page,wiki de juego,domain,en,scrapy
+seed76,https://segaretro.org/Main_Page,historia y videojuegos,domain,en,custom
+seed77,https://info.sonicretro.org/,wiki de franquicia,domain,en,scrapy
+seed78,https://starcitizen.tools/,wiki de juego,domain,en,custom
+seed79,https://starfieldwiki.net/,wiki de juego,domain,en,scrapy
+seed80,https://doomwiki.org/wiki/Entryway,wiki de franquicia,domain,en,custom
+seed81,https://theportalwiki.com/wiki/Main_Page,wiki de franquicia,domain,en,scrapy
+seed82,https://quakewiki.org/,wiki de franquicia,domain,en,custom
+seed83,https://www.finalfantasywiki.com/,wiki de franquicia,domain,en,scrapy
+seed84,https://www.grandtheftwiki.com/,wiki de franquicia,domain,en,custom
+seed85,https://combineoverwiki.net/wiki/Main_Page,wiki de franquicia,domain,en,scrapy
+seed86,https://www.khwiki.com/,wiki de franquicia,domain,en,custom
+seed87,https://dragon-quest.org/wiki/Main_Page,wiki de franquicia,domain,en,scrapy
+seed88,https://megamanwiki.com/,wiki de franquicia,domain,en,custom
+seed89,https://metalgear.wiki/,wiki de franquicia,domain,en,scrapy
+seed90,https://www.wikidex.net/,wiki de franquicia,domain,es,custom
+seed91,https://www.xenoserieswiki.org/,wiki de franquicia,domain,en,scrapy
+seed92,https://en.touhouwiki.net/,wiki de franquicia,domain,en,custom
+seed93,https://www.speedrunwiki.com/,guias y speedrunning,domain,en,scrapy
+seed94,https://www.dustloop.com/,guias y juegos de lucha,domain,en,custom
+seed95,https://wiki.supercombo.gg/,guias y juegos de lucha,domain,en,scrapy
+seed96,https://es.amiibopedia.com/,wiki de videojuegos,domain,es,custom
+seed97,https://animalcrossing.wikidex.net/,wiki de franquicia,domain,es,scrapy
+seed98,https://www.applegamingwiki.com/,base de conocimiento gaming,domain,en,scrapy
+seed99,https://armswiki.org/,wiki de franquicia,domain,en,custom
+seed100,https://banjokazooiewiki.com/,wiki de franquicia,domain,en,scrapy
+seed101,https://chibi-robo.wiki/,wiki de franquicia,domain,en,custom
+seed102,https://rarewiki.com/,wiki de videojuegos,domain,en,scrapy
+seed103,https://cookierun.wiki/,wiki de franquicia,domain,en,scrapy
+seed104,https://crashbandicootwiki.com/,wiki de franquicia,domain,en,custom
+seed105,https://creatures.wiki/,wiki de juego,domain,en,scrapy
+seed106,https://www.chronowiki.org/,wiki de franquicia,domain,en,custom
+seed107,https://vcc.wiki/,wiki de contenido de videojuegos,domain,en,scrapy
+seed108,https://cyberflix.wiki.gg/,wiki de videojuegos,domain,en,scrapy
+seed109,https://d2.destinygamewiki.com/,wiki de juego,domain,en,custom
+seed110,https://www.diablowiki.net/,wiki de franquicia,domain,en,scrapy
+seed111,https://dragalialost.wiki/,wiki de juego,domain,en,custom
+seed112,https://dragonsphere.wiki/,wiki de franquicia,domain,en,scrapy
+seed113,https://drawntolife.wiki/,wiki de franquicia,domain,en,scrapy
+seed114,https://wikibound.info/,wiki de franquicia,domain,en,custom
+seed115,https://www.eqwiki.net/,wiki de juego,domain,en,scrapy
+seed116,https://everquest.fanra.info/,wiki de juego,domain,en,custom
+seed117,https://mutecity.org/,wiki de franquicia,domain,en,scrapy
+seed118,https://geckwiki.com/,wiki de modding y videojuegos,domain,en,scrapy
+seed119,https://wiki.thelostvillage.net/,wiki de franquicia,domain,en,custom
+seed120,https://wiki.gbl.gg/,wiki de juegos de lucha,domain,en,scrapy
+seed121,https://www.dreamcancel.com/,wiki de juegos de lucha,domain,en,custom
+seed122,https://newchallenger.net/,wiki de juegos de lucha,domain,en,scrapy
+seed123,https://gdri.smspower.org/,historia de desarrolladores,domain,en,scrapy
+seed124,https://gothic.wiki/,wiki de franquicia,domain,en,custom
+seed125,https://goldensunwiki.net/,wiki de franquicia,domain,en,scrapy
+seed126,https://gbf.wiki/,wiki de juego,domain,en,custom
+seed127,https://en.wikigta.org/,wiki de franquicia,domain,en,scrapy
+seed128,https://harvester.telepedia.net/,wiki de juego,domain,en,scrapy
+seed129,https://helldivers.wiki.gg/,wiki de franquicia,domain,en,custom
+seed130,https://jackbox.wiki/,wiki de franquicia,domain,en,scrapy
+seed131,https://www.kidicaruswiki.org/,wiki de franquicia,domain,en,custom
+seed132,https://www.khdatabase.com/,base de conocimiento de franquicia,domain,en,scrapy
+seed133,https://koeitecmo.wiki/,wiki de videojuegos,domain,en,scrapy
+seed134,https://kovopedia.com/,wiki de juego,domain,en,custom
+seed135,https://mamiyawiki.com/,wiki de juego,domain,en,scrapy
+seed136,https://wikiofmana.com/,wiki de franquicia,domain,en,custom
+seed137,https://medievil.wiki/,wiki de franquicia,domain,en,scrapy
+seed138,https://megatenwiki.com/,wiki de franquicia,domain,en,scrapy
+seed139,https://mysterydungeonwiki.com/,wiki de franquicia,domain,en,custom
+seed140,https://necretro.org/,historia de videojuegos,domain,en,scrapy
+seed141,https://theark.wiki/,wiki de juego y lore,domain,en,custom
+seed142,https://miiwiki.org/,wiki de videojuegos,domain,en,scrapy
+seed143,https://oldworldblues.wiki.gg/,wiki de juego y modding,domain,en,scrapy
+seed144,https://raymanpc.com/wiki/en/,wiki de franquicia,prefix,en,custom
+seed145,https://rhwiki.net/,wiki de franquicia,domain,en,scrapy
+seed146,https://sagawiki.org/,wiki de franquicia,domain,en,custom
+seed147,https://saintsrow.wiki/,wiki de franquicia,domain,en,scrapy
+seed148,https://signalis.wiki.gg/,wiki de juego,domain,en,scrapy
+seed149,https://www.sonicarchive.com/,wiki de franquicia,domain,en,custom
+seed150,https://sceecambridge.wiki/,historia de videojuegos,domain,en,scrapy
+seed151,https://spyrowiki.com/,wiki de franquicia,domain,en,custom
+seed152,https://wiki.seiwanetwork.org/,wiki de videojuegos,domain,en,scrapy
+seed153,https://stowiki.net/,wiki de juego,domain,en,scrapy
+seed154,https://ukikipedia.net/,wiki de juego,domain,en,custom
+seed155,https://es.ssbwiki.com/,wiki de franquicia,domain,es,scrapy
+seed156,https://harddrop.com/,wiki y guias de juego,domain,en,custom
+seed157,https://tcoaal.wiki/,wiki de juego,domain,en,scrapy
+seed158,https://legendofdragoon.org/,wiki de juego,domain,en,scrapy
+seed159,https://triforcewiki.com/,wiki de franquicia,domain,en,custom
+seed160,https://www.zeldadungeon.net/,guias y walkthroughs,domain,en,scrapy
+seed161,https://www.starfywiki.org/,wiki de franquicia,domain,en,custom
+seed162,https://tomclancy.wiki.gg/,wiki de franquicia,domain,en,scrapy
+seed163,https://www.wikiraider.com/,wiki de franquicia,domain,en,scrapy
+seed164,https://toontownrewritten.wiki/,wiki de juego,domain,en,custom
+seed165,https://twoworldswiki.com/,wiki de franquicia,domain,en,scrapy
+seed166,https://wiki.ultimacodex.com/,wiki de franquicia,domain,en,custom
+seed167,https://www.uoguide.com/,wiki y guias de juego,domain,en,scrapy
+seed168,https://warswiki.org/wiki/Main_Page,wiki de franquicia,domain,en,scrapy
+seed169,https://wizardry.wiki.gg/,wiki de franquicia,domain,en,custom
+seed170,https://es.splatoonwiki.org/,wiki de franquicia,domain,es,scrapy
+seed171,https://wiki.eveuniversity.org/Main_Page,guias y mecanicas de EVE Online,domain,en,scrapy
+seed172,https://wiki.guildwars.com/wiki/Main_Page,enciclopedia y guias de Guild Wars,domain,en,custom
+seed173,https://www.rpgsite.net/,analisis y guias de juegos de rol,domain,en,scrapy
+seed174,https://www.gamingonlinux.com/,videojuegos Linux Steam Deck y compatibilidad,domain,en,custom
+seed175,https://www.filfre.net/,historia del videojuego y aventuras clasicas,domain,en,scrapy
+seed176,https://shmuplations.com/,entrevistas historicas a desarrolladores,domain,en,custom
+seed177,https://www.nintenderos.com/,noticias analisis y guias de Nintendo,domain,es,scrapy
+seed178,https://generacionxbox.com/,noticias y analisis de Xbox y PC,domain,es,custom
+seed179,https://uvejuegos.com/,analisis guias y catalogo de videojuegos,domain,es,scrapy
+seed180,https://wiki.openttd.org/en/,simulacion transporte y mecanicas de OpenTTD,prefix,en,custom
+seed181,https://www.gamedeveloper.com/,desarrollo diseno e industria del videojuego,domain,en,scrapy
+seed182,https://www.pockettactics.com/,guias de juegos moviles y portatiles,domain,en,custom
+seed183,https://primagames.com/,guias estrategias y noticias de videojuegos,domain,en,scrapy
+seed184,https://www.anaitgames.com/,critica y cultura del videojuego,domain,es,custom

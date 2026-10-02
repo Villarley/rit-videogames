@@ -373,20 +373,17 @@ class CrawlPolicies:
         if multi:
             joined = " ".join(tokens)
             for phrase in multi:
-                # Count non-overlapping occurrences roughly.
-                start = 0
-                while True:
-                    idx = joined.find(phrase, start)
-                    if idx < 0:
-                        break
-                    hits += 1
-                    start = idx + len(phrase)
+                # Preserve non-overlapping substring matching.
+                hits += joined.count(phrase)
 
         density = (hits / len(tokens)) * 1000.0
         return hits, density
 
     def is_topical(self, text: str) -> bool:
-        hits, density = self.topical_score(text)
+        return self.is_topical_score(*self.topical_score(text))
+
+    def is_topical_score(self, hits: int, density: float) -> bool:
+        """Apply the same thresholds to an already computed score."""
         return hits >= self.topical_min_hits and density >= self.topical_min_density
 
     @classmethod

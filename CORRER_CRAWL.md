@@ -1,12 +1,12 @@
-# Cómo correr la descarga (~30 GB)
+# Cómo completar los 10 GB conjuntos
 
 Guía paso a paso para ejecutar los dos arañadores en tu propia computadora (Windows, macOS o Linux).
 
 ## 1. Qué vas a hacer
 
-Vas a abrir **dos terminales** y correr un arañador en cada una al mismo tiempo. El **propio** (`crawler`) apunta a unos **20 GB** de texto plano y **Scrapy** a unos **10 GB** (el mínimo del curso es 10 GB; nuestra meta es **30 GB** en total, y cada GB extra sobre 10 da un punto extra). Según tu conexión, puede tardar **aprox. 15 a 24 horas**. Puedes **pausar** (Ctrl+C) y **reanudar** más tarde con el mismo comando.
+Vas a abrir **dos terminales** y correr un arañador en cada una al mismo tiempo. Ambos contribuyen a una sola meta: **10 GB de texto plano entre los dos**, incluyendo lo ya descargado. El código mide GiB (1024³ bytes); no cuenta el tamaño de SQLite, logs ni HTML. Puedes **pausar** (Ctrl+C) y **reanudar** más tarde con el mismo comando. El tiempo depende del rendimiento medido, de los sitios y de la cantidad de contenido nuevo.
 
-**Importante: la entrega es el 1 de octubre a las 10:00 p.m. y la descarga tarda cerca de un día. Arrancala lo antes posible.**
+**Importante: la entrega es el 1 de octubre a las 10:00 p.m. Comprueba el avance real con `analysis.progress`; no hay una duración garantizada.**
 
 ## 2. Antes de empezar (checklist)
 
@@ -23,7 +23,7 @@ python --version
 (Si falla, prueba `py --version` en Windows o `python3 --version` en macOS/Linux.)
 
 - [ ] **Git** instalado.
-- [ ] **Al menos 45 GB libres** en disco (30 GB de texto + base de datos + margen). Al arrancar, cada arañador imprime un **WARNING** si el espacio libre es menor que su meta de GB más **5 GB** de margen. Si quedan **menos de 2 GB**, el arañador **se detiene solo** para no llenar el disco.
+- [ ] Espacio para el texto restante, SQLite, logs y margen adicional. Al arrancar se muestra el espacio libre. Si quedan **menos de 2 GB**, el arañador **se detiene solo**.
 - [ ] **Conexión estable** (evita VPN o redes de escuela que bloqueen sitios).
 - [ ] Computadora **enchufada** y **sin suspensión** mientras corre la descarga:
   - **macOS:** en una tercera terminal deja corriendo:
@@ -91,13 +91,13 @@ git pull
 
 Abre **dos terminales**. En **cada una**: `cd` al repo y activa el venv. Luego:
 
-**Terminal 1 (arañador propio, meta 20 GB, 32 hilos por defecto):**
+**Terminal 1 (arañador propio, 32 hilos por defecto):**
 
 ```bash
 python -m crawler.main
 ```
 
-**Terminal 2 (Scrapy, meta 10 GB):**
+**Terminal 2 (Scrapy, misma meta conjunta de 10 GB):**
 
 ```bash
 python -m scrapy_crawler.run
@@ -105,19 +105,31 @@ python -m scrapy_crawler.run
 
 Al inicio verás una línea tipo `CRAWLER seeds=...` o `SCRAPY seeds=...` con `mode=fresh` o `mode=resuming`.
 
+### Recuperar el crawl afectado por el antiguo cupo de dominio
+
+Si Scrapy terminó con menos de 10 GB conjuntos y sus logs muestran enlaces omitidos, usa en la terminal 2:
+
+```bash
+python -m scrapy_crawler.run --recover-links
+```
+
+El comando conserva la base, la cola y las solicitudes visitadas. Reexplora semillas y páginas guardadas o descartadas por poco texto cuyos logs muestran enlaces permitidos que no se emitieron. Respeta profundidad, alcance, robots y cortesía. La recuperación tiene huellas persistidas separadas: puedes reanudar con el mismo comando sin repetir los trabajos de reparación ya programados. Conserva el log original. Si el log no está disponible, no se puede reconstruir ese conjunto de páginas automáticamente.
+
+Detén los procesos anteriores con Ctrl+C una vez y espera `SUMMARY` antes de arrancar la nueva versión. No uses `--fresh` para esta reparación.
+
 ### Qué significa la línea `PROGRESS`
 
 Cada ~20 segundos aparece una línea en stdout. Ejemplo del **arañador propio**:
 
 ```
-PROGRESS 15:04:35 saved=2332/2332 text=0.03/20.0GB (0.2%) eta=24h34m rate=19.40p/s 0.23MB/s domains=29 inflight=7 errors=71 blocked=2
+PROGRESS 15:04:35 saved=2332/2332 project_text=3.70/10.0GB (37.0%) eta=? rate=8.00p/s 0.04MB/s domains=29 inflight=7 errors=71 blocked=2
 ```
 
 | Campo | Significado |
 |-------|-------------|
 | `15:04:35` | Hora local del reporte |
 | `saved=2332/2332` | Páginas guardadas **en esta ejecución** / total en la base para este arañador |
-| `text=0.03/20.0GB (0.2%)` | GB acumulados de este arañador hacia su meta |
+| `project_text=3.70/10.0GB (37.0%)` | Texto acumulado entre ambos crawlers hacia la meta conjunta |
 | `eta=24h34m` | Tiempo estimado para llegar a la meta (puede ser `?` al principio) |
 | `rate=19.40p/s 0.23MB/s` | Velocidad reciente (páginas y megabytes por segundo) |
 | `domains=29` | Dominios con trabajo activo |
@@ -125,7 +137,7 @@ PROGRESS 15:04:35 saved=2332/2332 text=0.03/20.0GB (0.2%) eta=24h34m rate=19.40p
 | `errors=71` | Fallos de red, HTTP, etc. (normal en crawls largos) |
 | `blocked=2` | Dominios bloqueados por muchos fallos seguidos (el crawler los respeta) |
 
-Velocidad esperada: entre los dos arañadores, ~1.3 a 1.5 GB por hora; al inicio la ETA fluctúa, es normal.
+La ETA usa el crecimiento del total conjunto desde el arranque. El total se consulta cada 30 segundos en segundo plano; al inicio puede mostrar `?`. `rate` sigue siendo la velocidad reciente del proceso individual.
 
 En **Scrapy**, la línea es similar pero en lugar de `domains` / `inflight` / `blocked` verás `pending_requests=` (cola + peticiones en curso) y `errors=`.
 
@@ -139,7 +151,7 @@ En una **tercera terminal** (venv activado, raíz del repo):
 python -m analysis.progress
 ```
 
-Muestra GB y páginas por `crawler_source`, totales hacia la meta de 30 GB, dominios top e idiomas. Solo lectura sobre `repository/crawl.db`.
+Muestra GB y páginas por `crawler_source`, totales hacia la meta conjunta de 10 GB, dominios top e idiomas. Solo lectura sobre `repository/crawl.db`.
 
 Opcional: otra ruta a la base:
 
@@ -172,19 +184,11 @@ Si reiniciaste la computadora, mismo procedimiento: mismos comandos, mismo venv.
 
 ## 7. Cuándo termina
 
-Cada arañador **se detiene solo** al alcanzar su meta de GB. En `SUMMARY` verás `stop_reason=target_reached`.
+Ambos arañadores **se detienen al alcanzar 10 GB conjuntos**. En `SUMMARY` verás `stop_reason=target_reached`. Puede haber un pequeño exceso por el intervalo de comprobación y las solicitudes en vuelo.
 
-Si uno termina antes y el **total** sigue por debajo de 30 GB, puedes subir su meta y volver a lanzarlo (sigue desde donde quedó). Ejemplo:
+`stop_reason=finished` significa cola agotada, no meta alcanzada. Para el antiguo fallo del cupo usa la recuperación descrita arriba. Si se agota también el alcance disponible tras repararlo, habrá que revisar nuevas semillas dentro del tema; aumentar la meta no crea URLs nuevas.
 
-```bash
-python -m crawler.main --target-gb 25
-```
-
-```bash
-python -m scrapy_crawler.run --target-gb 12
-```
-
-(`--target-gb 0` desactiva tope de tamaño; no lo uses salvo que lo acordéis en el equipo.)
+`--target-gb` expresa ahora la meta conjunta: si la cambias, usa el mismo valor en ambos procesos. `--target-gb 0` desactiva la parada por tamaño.
 
 ## 8. Al terminar
 

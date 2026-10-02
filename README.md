@@ -2,7 +2,7 @@
 
 Proyecto del curso **Recuperación de Información Textual** (TEC). Tema: **videojuegos**.
 
-**¿Vas a correr la descarga de ~30 GB?** Leé **[CORRER_CRAWL.md](CORRER_CRAWL.md)** (guía paso a paso para Windows, macOS y Linux).
+**¿Vas a completar los 10 GB conjuntos?** Leé **[CORRER_CRAWL.md](CORRER_CRAWL.md)** (guía paso a paso para Windows, macOS y Linux).
 
 ## Integrantes
 
@@ -16,10 +16,12 @@ Dos arañadores distintos alimentan **un solo repositorio** (`repository/`): met
 
 | Implementación | Comando | Meta por defecto |
 |----------------|---------|------------------|
-| Propio (hilos) | `python -m crawler.main` | 20 GB |
-| Scrapy | `python -m scrapy_crawler.run` | 10 GB |
+| Propio (hilos) | `python -m crawler.main` | 10 GB conjuntos |
+| Scrapy | `python -m scrapy_crawler.run` | 10 GB conjuntos |
 
-Meta conjunta del curso: **30 GB** de texto útil sobre videojuegos.
+Meta del proyecto: **10 GB de texto útil entre ambos crawlers**, contando también lo ya descargado. El código usa GiB (1024³ bytes), por lo que supera 10 GB decimales. Ambos consultan el total de la misma base cada 30 segundos, fuera de los hilos de descarga, y se detienen al alcanzar la meta; las solicitudes en vuelo pueden causar un pequeño exceso. `--target-gb` ahora cambia la meta conjunta; usa el mismo valor en ambos procesos.
+
+Para recuperar una cola de Scrapy agotada por el antiguo contador de enlaces repetidos, ejecuta `python -m scrapy_crawler.run --recover-links`. Conserva JOBDIR y datos, reexplora semillas y páginas con enlaces omitidos según el log, y mantiene un historial separado de recuperación para no repetirla al reiniciar. El cupo por dominio cuenta URLs canónicas únicas y se conserva en JOBDIR.
 
 ## Estructura del proyecto
 

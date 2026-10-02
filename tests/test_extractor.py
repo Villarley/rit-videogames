@@ -146,3 +146,17 @@ def test_nested_chrome_does_not_empty_page() -> None:
     assert len(page.text.strip()) > 20
     hrefs = {href for href, _ in page.links}
     assert "https://example.wiki/w/Related" in hrefs
+
+
+@pytest.mark.parametrize("raw", [MEDIAWIKI_HTML, NEWS_HTML, NESTED_CHROME_HTML, "", "not <<html>> at all"])
+def test_skip_link_collection_preserves_content(raw, monkeypatch):
+    from crawler import extractor
+    expected = extract(raw, "https://example.com/")
+    def unexpected_collection(*args):
+        pytest.fail("Link collection must be skipped")
+    monkeypatch.setattr(extractor, "_collect_links", unexpected_collection)
+    actual = extract(raw, "https://example.com/", collect_links=False)
+    assert (actual.title, actual.text, actual.language) == (
+        expected.title, expected.text, expected.language
+    )
+    assert actual.links == []
