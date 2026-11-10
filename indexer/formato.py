@@ -116,6 +116,26 @@ class IndiceBinario:
                 hi = mid - 1
         return -1
 
+    def prefijo(self, prefijo: str) -> range:
+        """Términos que empiezan con el prefijo: un rango seguido del vocabulario.
+
+        Como VOCA está ordenado por bytes, basta una búsqueda binaria para el
+        primer término >= prefijo y recorrer mientras siga empezando igual (la
+        "búsqueda secuencial en el vocabulario" de la clase de indexación).
+        """
+        objetivo = prefijo.encode("utf-8")
+        lo, hi = 0, self.V
+        while lo < hi:
+            mid = (lo + hi) // 2
+            if self._termino_bytes(mid) < objetivo:
+                lo = mid + 1
+            else:
+                hi = mid
+        fin = lo
+        while fin < self.V and self._termino_bytes(fin).startswith(objetivo):
+            fin += 1
+        return range(lo, fin)
+
     def postings(self, i: int) -> tuple[np.ndarray, np.ndarray]:
         """(documentos, tf) del término i, decodificando el variable byte."""
         ini = self._post0 + int(self._post_off[i])

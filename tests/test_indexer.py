@@ -119,10 +119,10 @@ def test_indice_igual_a_contar_a_mano(coleccion, politica):
             esperado = [(d, c[t]) for d, c in enumerate(cuentas) if t in c]
             assert list(zip(docs.tolist(), tfs.tolist())) == esperado
             assert int(ix.voc[i]["df"]) == df[t]
-            assert float(ix.voc[i]["idf"]) == pytest.approx(math.log10(N / df[t]), rel=1e-6)
+            assert float(ix.voc[i]["idf"]) == pytest.approx(math.log2(N / df[t]), rel=1e-6)
         assert ix.buscar("noexisteestapalabra") == -1
         for d, c in enumerate(cuentas):
-            w2 = sum(((1 + math.log10(tf)) * math.log10(N / df[t])) ** 2 for t, tf in c.items())
+            w2 = sum(((1 + math.log2(tf)) * math.log2(N / df[t])) ** 2 for t, tf in c.items())
             assert float(ix.docs[d]["norma"]) == pytest.approx(math.sqrt(w2), rel=1e-5, abs=1e-6)
             assert int(ix.docs[d]["largo"]) == sum(c.values())
         assert ix.docs["page_id"].tolist() == list(range(1, N + 1))

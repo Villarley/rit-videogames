@@ -19,6 +19,8 @@
       <button data-rel="2" class="{{ 'sel' if j == 2 }}">Muy relevante</button>
       <button data-rel="1" class="{{ 'sel' if j == 1 }}">Algo relevante</button>
       <button data-rel="0" class="{{ 'sel' if j == 0 }}">No relevante</button>
+      <label class="meta conocido" title="Para cobertura y novedad: ¿ya sabías de esta página antes de esta búsqueda?">
+        <input type="checkbox" {{ 'checked' if x.page_id in conocidos }}> ya la conocía</label>
       <span class="meta">#{{ x.rango }}</span>
     </div>
   </div>
@@ -29,11 +31,20 @@
 <script>
 const total = {{ resultados|length }};
 document.querySelectorAll('.juicio').forEach(caja => {
-  caja.querySelectorAll('button').forEach(b => b.addEventListener('click', async () => {
+  const marca = caja.querySelector('input[type=checkbox]');
+  const guardar = async (rel) => {
     const r = await fetch('{{ url_for("juicio") }}', {method: 'POST', headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({corrida: {{ c.id }}, page_id: Number(caja.dataset.page), relevancia: Number(b.dataset.rel)})});
-    if (!r.ok) { alert('No se pudo guardar el juicio'); return; }
-    const d = await r.json();
+      body: JSON.stringify({corrida: {{ c.id }}, page_id: Number(caja.dataset.page), relevancia: rel, conocido: marca.checked})});
+    if (!r.ok) { alert('No se pudo guardar el juicio'); return null; }
+    return r.json();
+  };
+  marca.addEventListener('change', () => {
+    const sel = caja.querySelector('button.sel');
+    if (sel) guardar(Number(sel.dataset.rel));   // si todavía no hay juicio, se manda con el próximo clic
+  });
+  caja.querySelectorAll('button').forEach(b => b.addEventListener('click', async () => {
+    const d = await guardar(Number(b.dataset.rel));
+    if (!d) return;
     caja.querySelectorAll('button').forEach(x => x.classList.remove('sel'));
     b.classList.add('sel');
     document.getElementById('cuenta').textContent = d.juzgados + ' de ' + total + ' juzgados';

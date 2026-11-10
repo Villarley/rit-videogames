@@ -79,3 +79,4 @@ label.opcion small { display: block; color: var(--suave); margin-left: 24px; }
 @media (max-width: 600px) { .graficos { grid-template-columns: 1fr; } .portada h1 { font-size: 40px; } }
 .lienzo { position: relative; height: 280px; }
 .necesidad .chip { display: inline-block; }
+.juicio .conocido { display: inline-flex; align-items: center; gap: 4px; margin: 0 0 0 6px; cursor: pointer; }

@@ -29,7 +29,7 @@ Cada sección empieza con una cabecera de 16 bytes y se rellena con ceros hasta 
 | 8 | versión | u16 | `01 00` = 1 |
 | 10 | banderas de la política | u16 | `ff 00`: los 8 bits encendidos |
 | 12 | N, documentos | u32 | `20 4e 00 00` = 20 000 |
-| 16 | V, términos | u32 | `a7 44 03 00` = 214 183 |
+| 16 | V, términos | u32 | `9e 44 03 00` = 214 174 |
 | 20 | reservado | u32 | 0 |
 | 24 | tokens en la colección | u64 | |
 | 32 | offset y largo de CONF | u64 + u64 | |
@@ -53,8 +53,10 @@ VOCA tiene V registros fijos de 24 bytes, en el orden de los bytes UTF-8 del té
 | 0 | dónde empieza el texto del término dentro de TERM | u32 |
 | 4 | df, documentos que lo contienen | u32 |
 | 8 | cf, apariciones en toda la colección | u32 |
-| 12 | idf = log10(N / df) | f32 |
+| 12 | idf = log2(N / df) | f32 |
 | 16 | dónde empieza su lista dentro de POST | u64 |
+
+Como los términos están ordenados, una consulta por prefijo (`zeld*`) es una búsqueda binaria del primer término que empieza así y un recorrido mientras siga empezando igual (`IndiceBinario.prefijo`).
 
 El largo de una lista es el `post_off` del siguiente término menos el propio, y el largo de un término es igual con `term_off` (menos el 00 que lo separa). Guardar los términos juntos en TERM y no dentro de cada registro es el "diccionario como cadena" de Manning et al. (2008, sección 5.2.1): ahorra el espacio de un campo de largo fijo para la palabra más larga.
 
@@ -62,19 +64,19 @@ Ejemplo con el término `zeldabotw` (lo que queda de "Breath of the Wild" despu�
 
 ```
 $ python -m indexer.inspeccionar indices/completo.idx --termino zeldabotw
-término #183181: 'zeldabotw'
-  df=2,512  cf=2,512  idf=0.9010
+término #183172: 'zeldabotw'
+  df=2,512  cf=2,512  idf=2.9931
 
-$ hexdump -C -s 20366104 -n 24 indices/completo.idx          (registro VOCA)
-0136c318  5d 4c 17 00 d0 09 00 00  d0 09 00 00 9d a8 66 3f  |]L............f?|
-0136c328  e8 62 d0 00 00 00 00 00                           |.b......|
+$ hexdump -C -s 20364560 -n 24 indices/completo.idx          (registro VOCA)
+0136bd10  1a 4c 17 00 d0 09 00 00  d0 09 00 00 d0 8e 3f 40  |.L............?@|
+0136bd20  c3 5c d0 00 00 00 00 00                           |.\......|
 ```
 
-`5d 4c 17 00` es term_off = 1 526 877, `d0 09 00 00` es df = 2 512, el siguiente `d0 09 00 00` es cf = 2 512, `9d a8 66 3f` es el float 0.9010 y `e8 62 d0 00 00 00 00 00` es post_off = 13 656 808.
+`1a 4c 17 00` es term_off = 1 526 810, `d0 09 00 00` es df = 2 512, el siguiente `d0 09 00 00` es cf = 2 512, `d0 8e 3f 40` es el float 2.9931 = log2(20 000 / 2 512) y `c3 5c d0 00 00 00 00 00` es post_off = 13 655 235.
 
 ```
-$ hexdump -C -s 15534925 -n 10 indices/completo.idx          (TERM)
-00ed0b4d  7a 65 6c 64 61 62 6f 74  77 00                    |zeldabotw.|
+$ hexdump -C -s 15533594 -n 10 indices/completo.idx          (TERM)
+00ed061a  7a 65 6c 64 61 62 6f 74  77 00                    |zeldabotw.|
 ```
 
 ## POST: las listas de postings
@@ -89,11 +91,15 @@ Todos los números van en variable byte (Manning et al. 2008, sección 5.3.1): 7
 El bit para tf = 1 es el mismo truco del formato Lucene50 de Lucene: como la mayoría de los términos aparecen una sola vez en cada documento, casi ningún posting necesita un byte para su tf. En la muestra eso bajó el índice `completo` de 28.4 MiB a 20.4 MiB.
 
 ```
-$ hexdump -C -s 13657512 -n 16 indices/completo.idx          (POST de zeldabotw)
-00d065a8  05 05 05 0f 11 13 03 0f  11 05 13 11 05 15 33 67  |..............3g|
+$ hexdump -C -s 13656259 -n 16 indices/completo.idx          (POST de zeldabotw)
+00d060c3  05 05 05 0f 11 13 03 0f  11 05 13 11 05 15 33 67  |..............3g|
 ```
 
 `05` = 0b101: distancia 2 y tf = 1, entonces el primer documento es el 2. El segundo `05` suma 2 (documento 4) y el tercero otros 2 (documento 6). `0f` = 0b1111 es distancia 7 con tf = 1, o sea el documento 13. Eso coincide con lo que imprime `inspeccionar` (2, 4, 6...).
+
+### Por qué no hay posiciones
+
+La clase de indexación presenta el índice invertido completo, con la posición de cada aparición, que sirve para buscar frases y por proximidad. Aquí no se guardan, porque la prioridad (1) del enunciado es un índice pequeño: en Manning et al. (2008, sección 5.2) las posiciones multiplican el tamaño de las listas por dos o por cuatro. La búsqueda por frase del buscador (`"vuelo supremo"`) pide primero que estén todos los términos, con las listas de este índice, y después confirma que salgan seguidos releyendo el texto de los candidatos mejor puntuados. Lucene sí puede guardarlas (`DOCS_AND_FREQS_AND_POSITIONS`), pero se dejó en `DOCS_AND_FREQS` para que los dos índices guarden lo mismo y la comparación de tamaños sea justa.
 
 ## DOCS: la tabla de documentos
 
@@ -107,11 +113,11 @@ N registros de 16 bytes. El número interno de un documento (el que aparece en l
 | 12 | norma del vector TF-IDF | f32 |
 
 ```
-01421d90  44 4f 43 53 20 4e 00 00  00 e2 04 00 00 00 00 00  |DOCS N..........|
-01421da0  01 00 00 00 ac 01 00 00  85 01 00 00 9f e0 fb 41  |...............A|
+01421780  44 4f 43 53 20 4e 00 00  00 e2 04 00 00 00 00 00  |DOCS N..........|
+01421790  01 00 00 00 ac 01 00 00  85 01 00 00 ae 1c d5 42  |...............B|
 ```
 
-La primera línea es la cabecera de la sección (DOCS, 20 000 registros, 320 000 bytes). El documento 0 tiene page_id 1, 428 términos, 389 distintos y norma 31.48.
+La primera línea es la cabecera de la sección (DOCS, 20 000 registros, 320 000 bytes). El documento 0 tiene page_id 1, 428 términos, 389 distintos y norma 106.56.
 
 La URL y el título no se repiten en el índice: el buscador los saca de `crawl.db` con el page_id. Con 1.8 millones de páginas eso son cientos de MB que el índice no tiene que cargar.
 
@@ -120,12 +126,12 @@ La URL y el título no se repiten en el índice: el buscador los saca de `crawl.
 Con lo que trae el archivo se calcula el coseno sin volver a leer la colección:
 
 ```
-w(t, d) = (1 + log10 tf) * idf(t)        idf(t) = log10(N / df)       (VOCA)
+w(t, d) = (1 + log2 tf) * idf(t)         idf(t) = log2(N / df)       (VOCA)
 |d|     = raíz de la suma de w(t, d)²                                 (DOCS)
 coseno(q, d) = suma de w(t, q) * w(t, d) / (|q| * |d|)
 ```
 
-Es el esquema ltc.ltc de SMART (Salton y Buckley 1988). Lucene, con `ClassicSimilarity`, usa otra variante del mismo modelo: tf = raíz de la frecuencia, idf = 1 + ln(N / (df + 1)) y normaliza por 1 / raíz del largo del documento.
+Son las fórmulas de la clase del modelo vectorial: tf = 1 + log2(f) e idf = log2(N / n), con logaritmo en base 2. Con la normalización de coseno equivale al esquema ltc.ltc de SMART (Salton y Buckley 1988). Lucene, con `ClassicSimilarity`, usa otra variante del mismo modelo: tf = raíz de la frecuencia, idf = 1 + ln(N / (df + 1)) y normaliza por 1 / raíz del largo del documento.
 
 ## Cómo se construye
 

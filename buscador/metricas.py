@@ -11,6 +11,14 @@ Definiciones (Manning, Raghavan y Schütze 2008, cap. 8; Järvelin y Kekäläine
 - RR: 1 / posición del primer relevante. MRR es el promedio.
 - nDCG@10: ganancia acumulada con descuento log2, usando la relevancia graduada
   (0, 1, 2), dividida entre la del orden ideal con los juicios conocidos.
+- R-precisión: precisión en los primeros R resultados, con R el número de
+  relevantes conocidos de la necesidad (clase de métricas; Manning et al. 8.4).
+- F@10: media armónica de P@10 y recall@10 = relevantes en el top 10 / R.
+- Cobertura y novedad (métricas centradas en la persona usuaria, clase de
+  métricas y Baeza-Yates y Ribeiro-Neto 2011, cap. 4): K son los documentos que
+  la persona ya conocía. Como solo puede marcar los que ve, K se arma con lo que
+  marcó "ya la conocía" en todas sus corridas de esa necesidad.
+  cobertura = |K ∩ R ∩ A| / |K ∩ R|        novedad = |(R ∩ A) - K| / |R ∩ A|
 - kappa de Cohen: acuerdo entre dos evaluadores sobre los mismos pares
   (necesidad, documento), corregido por el acuerdo esperado por azar.
 """
@@ -38,6 +46,25 @@ def precision_promedio(rels: list[int], R: int) -> float:
             aciertos += 1
             suma += aciertos / i
     return suma / R
+
+
+def precision_r(rels: list[int], R: int) -> float:
+    if R == 0:
+        return 0.0
+    return sum(1 for r in rels[:R] if r >= 1) / R
+
+
+def f_en(rels: list[int], R: int, k: int = 10) -> float:
+    p = precision_en(rels, k)
+    rc = sum(1 for r in rels[:k] if r >= 1) / R if R else 0.0
+    return 2 * p * rc / (p + rc) if p + rc else 0.0
+
+
+def cobertura_novedad(relevantes_a: set[int], conocidos: set[int], conocidos_relevantes: set[int]) -> tuple[float | None, float | None]:
+    """relevantes_a = R ∩ A, conocidos = K, conocidos_relevantes = K ∩ R."""
+    cob = len(relevantes_a & conocidos) / len(conocidos_relevantes) if conocidos_relevantes else None
+    nov = len(relevantes_a - conocidos) / len(relevantes_a) if relevantes_a else None
+    return cob, nov
 
 
 def rango_reciproco(rels: list[int]) -> float:
@@ -86,8 +113,11 @@ def calcular(datos: Datos) -> dict:
     for r in cn.execute("SELECT corrida_id, rango, page_id FROM mostrados ORDER BY corrida_id, rango"):
         mostrados[r[0]].append(int(r[2]))
     juicios = defaultdict(dict)
-    for r in cn.execute("SELECT corrida_id, page_id, relevancia FROM juicios"):
+    marcados = defaultdict(set)  # corrida -> páginas que la persona ya conocía
+    for r in cn.execute("SELECT corrida_id, page_id, relevancia, conocido FROM juicios"):
         juicios[r[0]][int(r[1])] = int(r[2])
+        if r[3]:
+            marcados[r[0]].add(int(r[1]))
 
     def clave(c):
         return c["necesidad"] or c["consulta"].strip().lower()
@@ -99,6 +129,15 @@ def calcular(datos: Datos) -> dict:
             k = clave(c)
             pool[k][pid] = max(pool[k].get(pid, 0), rel)
 
+    # K por (evaluador, necesidad): lo que marcó como conocido, y cuáles de esos son relevantes
+    K: dict[tuple, set[int]] = defaultdict(set)
+    KR: dict[tuple, set[int]] = defaultdict(set)
+    for c in corridas:
+        for pid in marcados[c["id"]]:
+            K[(c["evaluador"], clave(c))].add(pid)
+            if juicios[c["id"]].get(pid, 0) >= 1:
+                KR[(c["evaluador"], clave(c))].add(pid)
+
     filas = []
     for c in corridas:
         j = juicios[c["id"]]
@@ -107,20 +146,30 @@ def calcular(datos: Datos) -> dict:
         rels = [j.get(pid, 0) for pid in mostrados[c["id"]]]
         conocidos = list(pool[clave(c)].values())
         R = sum(1 for r in conocidos if r >= 1)
+        rel_a = {pid for pid in mostrados[c["id"]] if j.get(pid, 0) >= 1}
+        kk = (c["evaluador"], clave(c))
+        cob, nov = cobertura_novedad(rel_a, K[kk], KR[kk])
         filas.append({
             "corrida": c["id"], "evaluador": c["evaluador"], "necesidad": clave(c), "consulta": c["consulta"],
             "indice": c["indice"], "ts": c["ts"], "juzgados": len(j), "relevantes": sum(1 for r in rels if r >= 1),
             "p5": precision_en(rels, 5), "p10": precision_en(rels, 10), "ap": precision_promedio(rels, R),
             "rr": rango_reciproco(rels), "ndcg10": ndcg(rels, conocidos, 10), "ms": c["ms"] or 0,
+            "rprec": precision_r(rels, R), "f10": f_en(rels, R, 10), "cobertura": cob, "novedad": nov,
             "rels": rels,
         })
 
     def promedio(fs, m):
         return statistics.fmean(f[m] for f in fs) if fs else 0.0
 
+    def promedio_definidas(fs, m):
+        vs = [f[m] for f in fs if f[m] is not None]
+        return statistics.fmean(vs) if vs else None
+
     def resumen(fs):
         return {"corridas": len(fs), "P@5": promedio(fs, "p5"), "P@10": promedio(fs, "p10"),
-                "MAP": promedio(fs, "ap"), "MRR": promedio(fs, "rr"), "nDCG@10": promedio(fs, "ndcg10")}
+                "MAP": promedio(fs, "ap"), "MRR": promedio(fs, "rr"), "nDCG@10": promedio(fs, "ndcg10"),
+                "R-prec": promedio(fs, "rprec"), "F@10": promedio(fs, "f10"),
+                "cobertura": promedio_definidas(fs, "cobertura"), "novedad": promedio_definidas(fs, "novedad")}
 
     por_indice = defaultdict(list)
     por_necesidad = defaultdict(list)

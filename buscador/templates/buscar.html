@@ -24,7 +24,8 @@
   {{ formulario(true) }}
   <div class="ayuda">
     Operadores: <code>+jefe</code> obligatorio, <code>-dlc</code> excluir, <code>site:minecraft.wiki</code>,
-    <code>-site:kotaku.com</code>, <code>idioma:es</code>, <code>fuente:scrapy</code>. Las fechas se pueden escribir
+    <code>-site:kotaku.com</code>, <code>idioma:es</code>, <code>fuente:scrapy</code>, <code>"vuelo supremo"</code> frase exacta,
+    <code>zeld*</code> palabras que empiezan así. Las fechas se pueden escribir
     como quieras: <code>5 de octubre de 2023</code> encuentra "Oct 5, 2023".
   </div>
 </main>
@@ -41,8 +42,10 @@
   </div>
   {% endif %}
   <div class="resumen">
-    {{ "{:,}".format(r.total) }} resultados en {{ "%.1f"|format(r.ms) }} ms · índice {{ indice }}
+    {% if r.total_aprox %}unos {% endif %}{{ "{:,}".format(r.total) }} resultados en {{ "%.1f"|format(r.ms) }} ms · índice {{ indice }}
     {% if r.pesos %}· términos: {% for t, w in r.pesos.items() %}<span class="chip" title="peso {{ '%.3f'|format(w) }}">{{ t }}</span> {% endfor %}{% endif %}
+    {% for p, ts in r.consulta.prefijos.items() %}· {{ p }} → {{ ts|length }} términos{% endfor %}
+    {% if r.consulta.frases %}· frase exacta{% endif %}
     {% if r.desconocidos %}· no están en el índice: {{ r.desconocidos|join(', ') }}{% endif %}
   </div>
   {% for x in r.resultados %}

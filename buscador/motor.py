@@ -5,7 +5,7 @@ crawl.db para el título y la URL original de cada página, y los .txt para arma
 el fragmento que se muestra en los resultados.
 
 Modelo vectorial con pesos ltc.ltc de SMART (Salton y Buckley 1988):
-    w(t, d) = (1 + log10 tf) * idf,  idf = log10(N / df)
+    w(t, d) = (1 + log2 tf) * idf,  idf = log2(N / df)
     puntaje(q, d) = suma de w(t, q) * w(t, d) / (|q| * |d|)     (coseno)
 Las normas |d| ya vienen calculadas en el índice.
 """
@@ -40,6 +40,8 @@ class Consulta:
     sin_sitios: list[str] = field(default_factory=list)
     idioma: str | None = None
     fuente: str | None = None
+    frases: list[list[str]] = field(default_factory=list)  # términos que tienen que salir seguidos
+    prefijos: dict[str, list[str]] = field(default_factory=dict)  # "zeld*" -> términos del vocabulario
 
 
 @dataclass
@@ -65,6 +67,7 @@ class Respuesta:
     desconocidos: list[str]
     sugerencia: str | None = None
     expansion: list[tuple[str, float]] = field(default_factory=list)
+    total_aprox: bool = False
 
 
 class Motor:
@@ -137,6 +140,10 @@ class Motor:
                 libres.clear()
 
         for signo, campo, valor, frase, palabra in _OPERADOR.findall(texto):
+            if not campo and not frase and palabra.endswith("*") and len(palabra.rstrip("*")) >= 2:
+                vaciar()
+                self._prefijo(c, signo, palabra.rstrip("*"))
+                continue
             if not campo and not signo and not frase:
                 libres.append(palabra)
                 continue
@@ -151,6 +158,13 @@ class Motor:
                     c.fuente = valor
                 continue
             terminos = self.analizador.analizar(frase or palabra)
+            if frase and signo != "-" and len(terminos) > 1:
+                # Una frase entre comillas obliga a que estén todos sus términos
+                # y, después, a que salgan seguidos (ver _contiene_frase).
+                c.frases.append(terminos)
+                c.obligatorios.extend(terminos)
+                c.libres.extend(terminos)
+                continue
             if signo == "+":
                 c.obligatorios.extend(terminos)
                 c.libres.extend(terminos)
@@ -160,6 +174,43 @@ class Motor:
                 c.libres.extend(terminos)
         vaciar()
         return c
+
+    def _prefijo(self, c: Consulta, signo: str, raiz: str, maximo: int = 50) -> None:
+        """Consulta por patrón "zeld*": se expande a los términos del vocabulario con ese inicio.
+
+        El prefijo se pasa a minúsculas y sin tildes pero no por Porter, porque
+        la raíz de un pedazo de palabra no tiene sentido. Si hay muchos, se
+        quedan los "maximo" de mayor df.
+        """
+        toks = self.analizador._tokens_simples(raiz)
+        if len(toks) != 1:
+            return
+        ids = list(self.ix.prefijo(toks[0]))
+        if len(ids) > maximo:
+            df = self.ix.voc["df"][ids[0] : ids[-1] + 1]
+            ids = sorted(ids, key=lambda i: -int(df[i - ids[0]]))[:maximo]
+        terminos = [self.ix.termino(i) for i in ids]
+        c.prefijos[raiz + "*"] = terminos
+        if signo == "-":
+            c.excluidos.extend(terminos)
+        else:
+            c.libres.extend(terminos)
+
+    def _contiene_frase(self, page_id: int, frases: list[list[str]]) -> bool:
+        fila = self._db.execute("SELECT text_path FROM pages WHERE id = ?", (page_id,)).fetchone()
+        if not fila or not fila[0]:
+            return False
+        try:
+            texto = (self.raiz / fila[0]).read_text(encoding="utf-8", errors="replace")
+        except OSError:
+            return False
+        terms = self.analizador.analizar(texto)
+        for frase in frases:
+            n = len(frase)
+            primero = frase[0]
+            if not any(terms[i] == primero and terms[i : i + n] == frase for i in range(len(terms) - n + 1)):
+                return False
+        return True
 
     def _filtro(self, c: Consulta) -> np.ndarray | None:
         mask = None
@@ -196,7 +247,7 @@ class Motor:
                 desconocidos.append(t)
                 continue
             ids[t] = i
-            pesos[t] = (1 + math.log10(tf)) * self.idf[i]
+            pesos[t] = (1 + math.log2(tf)) * self.idf[i]
         if pesos_extra:
             for t, w in pesos_extra.items():
                 i = ids.get(t, self.ix.buscar(t))
@@ -211,7 +262,7 @@ class Motor:
             if w_q <= 0:
                 continue
             docs, tfs = self.ix.postings(ids[t])
-            w_d = (1 + np.log10(tfs.astype(np.float64))) * self.idf[ids[t]]
+            w_d = (1 + np.log2(tfs.astype(np.float64))) * self.idf[ids[t]]
             puntajes[docs] += w_q * w_d
             tocados[docs] = True
         con_norma = self.normas > 0
@@ -236,13 +287,32 @@ class Motor:
                 candidatos &= filtro
         idx = np.flatnonzero(candidatos)
         total = int(idx.size)
-        cuantos = min(desde + k, total)
+        total_aprox = False
+        if c.frases and total:
+            # El índice no guarda posiciones (para que pese menos), así que la
+            # frase se confirma releyendo el texto de los candidatos que ya
+            # tienen todos los términos, en orden de puntaje, hasta llenar la
+            # página. Es la verificación de la búsqueda por frase de la clase
+            # de indexación, pero sobre el documento en vez de las posiciones.
+            orden_c = idx[np.lexsort((idx, -puntajes[idx]))]
+            buenos = []
+            revisados = 0
+            for d in orden_c:
+                if (len(buenos) >= desde + k and revisados >= 200) or revisados >= 1000:
+                    break
+                revisados += 1
+                if self._contiene_frase(int(self.ix.docs[d]["page_id"]), c.frases):
+                    buenos.append(d)
+            total_aprox = revisados < total
+            idx = np.array(sorted(buenos), dtype=np.int64)
+            total = int(idx.size) if not total_aprox else max(int(idx.size), round(idx.size * total / revisados))
+        cuantos = min(desde + k, int(idx.size))
         if cuantos:
             sub = puntajes[idx]
-            if cuantos < total:
+            if cuantos < idx.size:
                 part = np.argpartition(-sub, cuantos - 1)[:cuantos]
             else:
-                part = np.arange(total)
+                part = np.arange(idx.size)
             orden = part[np.lexsort((idx[part], -sub[part]))]
             elegidos = idx[orden][desde:cuantos]
         else:
@@ -254,7 +324,7 @@ class Motor:
         self._completar(resultados, set(pesos) | set(c.obligatorios), fragmentos)
         sugerencia = self.sugerir(texto, c) if (desconocidos or total == 0) else None
         return Respuesta(consulta=c, resultados=resultados, total=total, ms=(time.perf_counter() - t0) * 1000,
-                         pesos=pesos, desconocidos=desconocidos, sugerencia=sugerencia)
+                         pesos=pesos, desconocidos=desconocidos, sugerencia=sugerencia, total_aprox=total_aprox)
 
     def _completar(self, resultados: list[Resultado], terminos: set[str], fragmentos: bool) -> None:
         if not resultados:
@@ -350,7 +420,7 @@ class Motor:
         for t, tf in cuenta.items():
             i = self.ix.buscar(t)
             if i >= 0:
-                vec[t] = (1 + math.log10(tf)) * self.idf[i]
+                vec[t] = (1 + math.log2(tf)) * self.idf[i]
         n = math.sqrt(sum(w * w for w in vec.values())) or 1.0
         return {t: w / n for t, w in vec.items()}
 

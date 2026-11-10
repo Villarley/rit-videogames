@@ -127,7 +127,7 @@ def crear_app(indices: list[str], ruta_datos: str | Path, base: str | None = Non
             frag = m.fragmento(m.raiz / ruta[0], terminos) if ruta and ruta[0] else ""
             resultados.append({**dict(f), "fragmento": frag})
         return render_template("corrida.html", c=c, resultados=resultados, juicios=datos.juicios_corrida(cid),
-                               necesidad=necesidad_por_id.get(c["necesidad"] or ""))
+                               conocidos=datos.conocidos_corrida(cid), necesidad=necesidad_por_id.get(c["necesidad"] or ""))
 
     @app.post("/api/juicio")
     def juicio():
@@ -135,7 +135,7 @@ def crear_app(indices: list[str], ruta_datos: str | Path, base: str | None = Non
         cid, page_id, rel = int(d["corrida"]), int(d["page_id"]), int(d["relevancia"])
         if rel not in (0, 1, 2) or not datos.corrida(cid):
             abort(400)
-        datos.juzgar(cid, page_id, rel)
+        datos.juzgar(cid, page_id, rel, bool(d.get("conocido")))
         return jsonify(ok=True, juzgados=len(datos.juicios_corrida(cid)))
 
     # --- métricas

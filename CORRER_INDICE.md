@@ -83,4 +83,6 @@ Para que otras personas evalúen desde su compu en la misma red: `--host 0.0.0.0
 
 Los juicios y la bitácora de consultas quedan en `buscador/datos/evaluaciones.db`. Antes de la entrega, en Métricas está "Exportar juicios (JSON)" y "Corridas (CSV)", que son los datos para la sección de estadísticas de uso del documento.
 
+La búsqueda acepta `"frase exacta"`, `zeld*` (prefijo), `+obligatorio`, `-excluir`, `site:`, `-site:`, `idioma:` y `fuente:`. En el modo evaluación, además de la relevancia, cada resultado tiene "ya la conocía", que es lo que usan la cobertura y la novedad de la página de Métricas.
+
 Las necesidades de información del modo evaluación están en `buscador/necesidades.json` y se pueden cambiar sin tocar código.

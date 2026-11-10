@@ -74,3 +74,41 @@ def test_formulas():
     ideal = (3 / math.log2(2)) + (1 / math.log2(3))
     assert M.ndcg([1, 2], [2, 1]) == pytest.approx((1 + 3 / math.log2(3)) / ideal)
     assert M.kappa([(1, 1), (0, 0), (1, 0), (0, 0)]) == pytest.approx(0.5)
+
+
+def test_frase_y_prefijo(coleccion, tmp_path):  # noqa: F811
+    from buscador.motor import Motor
+
+    conf = leer_configuracion(_conf(coleccion, "basico"))
+    construir(conf, procesos=1, registrar=lambda *_: None)
+    m = Motor(conf.salida)
+    assert [r.url for r in m.buscar('"bosses are hard"').resultados] == ["https://x.org/1"]
+    assert m.buscar('"hard bosses"').total == 0          # están los dos términos, pero no seguidos
+    assert m.buscar("bosses hard").total == 1
+    r = m.buscar("multi*")
+    assert set(r.consulta.prefijos["multi*"]) == {"multi", "multiplayer"}
+    assert [x.url for x in r.resultados] == ["https://x.org/7"]
+    assert m.buscar("pokem*").resultados[0].url == "https://x.org/3"
+    assert m.ix.prefijo("zzzz") == range(m.ix.prefijo("zzzz").start, m.ix.prefijo("zzzz").start)
+
+
+def test_r_precision_f_cobertura_novedad():
+    assert M.precision_r([1, 0, 1, 1], 2) == pytest.approx(0.5)
+    assert M.precision_r([1, 0], 0) == 0.0
+    # P@10 = 0.2, recall@10 = 2/4 -> F = 2 * 0.2 * 0.5 / 0.7
+    assert M.f_en([1, 1] + [0] * 8, 4) == pytest.approx(2 * 0.2 * 0.5 / 0.7)
+    cob, nov = M.cobertura_novedad({1, 2, 3}, conocidos={1, 9}, conocidos_relevantes={1, 9})
+    assert cob == pytest.approx(0.5) and nov == pytest.approx(2 / 3)
+    assert M.cobertura_novedad(set(), set(), set()) == (None, None)
+
+
+def test_juicio_con_conocido(app):
+    c = app.test_client()
+    cid = int(c.post("/evaluar", data={"evaluador": "Ana", "consulta": "zelda", "indice": "completo"})
+              .headers["Location"].rsplit("/", 1)[1])
+    c.post("/api/juicio", json={"corrida": cid, "page_id": 1, "relevancia": 2, "conocido": True})
+    g = c.get("/api/metricas").json["global"]
+    assert g["cobertura"] == pytest.approx(1.0) and g["novedad"] == pytest.approx(0.0)
+    assert g["R-prec"] == pytest.approx(1.0)
+    assert "ya la conocía" in c.get(f"/evaluar/{cid}").get_data(as_text=True)
+    assert "R-precisión" in c.get("/metricas").get_data(as_text=True)

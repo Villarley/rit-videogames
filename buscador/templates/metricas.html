@@ -1,10 +1,11 @@
 {% extends "base.html" %}
 {% block titulo %}Métricas - gameCrawlers{% endblock %}
 {% block cuerpo %}
+{% macro num(v) %}{{ "%.3f"|format(v) if v is not none else "–" }}{% endmacro %}
 <main class="ancho">
   <h2>Métricas</h2>
   <p style="color: var(--suave)">Calculadas sobre el ranking exacto que vio cada persona en el modo evaluación. Un resultado sin juicio
-     cuenta como no relevante. R (para MAP) son los relevantes distintos conocidos de cada necesidad, juntando a todos los evaluadores.
+     cuenta como no relevante. R (para MAP, R-precisión y F) son los relevantes distintos conocidos de cada necesidad, juntando a todos los evaluadores. Cobertura y novedad usan lo que cada persona marcó como "ya la conocía".
      <a href="{{ url_for('exportar') }}">Exportar juicios (JSON)</a> · <a href="{{ url_for('corridas_csv') }}">Corridas (CSV)</a></p>
 
   <div class="tarjetas">
@@ -14,6 +15,10 @@
     <div class="tarjeta"><div class="valor">{{ "%.3f"|format(g['P@10']) }}</div><div class="nombre">P@10</div></div>
     <div class="tarjeta"><div class="valor">{{ "%.3f"|format(g['MRR']) }}</div><div class="nombre">MRR</div></div>
     <div class="tarjeta"><div class="valor">{{ "%.3f"|format(g['nDCG@10']) }}</div><div class="nombre">nDCG@10</div></div>
+    <div class="tarjeta"><div class="valor">{{ "%.3f"|format(g['R-prec']) }}</div><div class="nombre">R-precisión</div></div>
+    <div class="tarjeta"><div class="valor">{{ "%.3f"|format(g['F@10']) }}</div><div class="nombre">F@10</div></div>
+    <div class="tarjeta"><div class="valor">{{ num(g.cobertura) }}</div><div class="nombre">cobertura</div></div>
+    <div class="tarjeta"><div class="valor">{{ num(g.novedad) }}</div><div class="nombre">novedad</div></div>
     <div class="tarjeta"><div class="valor">{{ g.corridas }}</div><div class="nombre">corridas evaluadas</div></div>
     <div class="tarjeta"><div class="valor">{{ m.juicios_total }}</div><div class="nombre">juicios</div></div>
     <div class="tarjeta"><div class="valor">{{ m.por_evaluador|length }}</div><div class="nombre">evaluadores</div></div>
@@ -44,19 +49,23 @@
 
   <h3>Por índice</h3>
   <table>
-    <tr><th>Índice</th><th>Corridas</th><th>P@5</th><th>P@10</th><th>MAP</th><th>MRR</th><th>nDCG@10</th></tr>
+    <tr><th>Índice</th><th>Corridas</th><th>P@5</th><th>P@10</th><th>MAP</th><th>MRR</th><th>nDCG@10</th><th>R-prec</th><th>F@10</th><th>Cobertura</th><th>Novedad</th></tr>
     {% for k, v in m.por_indice.items() %}
     <tr><td>{{ k }}</td><td class="num">{{ v.corridas }}</td><td class="num">{{ "%.3f"|format(v['P@5']) }}</td><td class="num">{{ "%.3f"|format(v['P@10']) }}</td>
-        <td class="num">{{ "%.3f"|format(v['MAP']) }}</td><td class="num">{{ "%.3f"|format(v['MRR']) }}</td><td class="num">{{ "%.3f"|format(v['nDCG@10']) }}</td></tr>
+        <td class="num">{{ "%.3f"|format(v['MAP']) }}</td><td class="num">{{ "%.3f"|format(v['MRR']) }}</td><td class="num">{{ "%.3f"|format(v['nDCG@10']) }}</td>
+        <td class="num">{{ "%.3f"|format(v['R-prec']) }}</td><td class="num">{{ "%.3f"|format(v['F@10']) }}</td>
+        <td class="num">{{ num(v.cobertura) }}</td><td class="num">{{ num(v.novedad) }}</td></tr>
     {% endfor %}
   </table>
 
   <h3>Por necesidad</h3>
   <table>
-    <tr><th>Necesidad</th><th>Corridas</th><th>P@5</th><th>P@10</th><th>MAP</th><th>MRR</th><th>nDCG@10</th></tr>
+    <tr><th>Necesidad</th><th>Corridas</th><th>P@5</th><th>P@10</th><th>MAP</th><th>MRR</th><th>nDCG@10</th><th>R-prec</th><th>F@10</th><th>Cobertura</th><th>Novedad</th></tr>
     {% for k, v in m.por_necesidad.items() %}
     <tr><td>{{ k }}</td><td class="num">{{ v.corridas }}</td><td class="num">{{ "%.3f"|format(v['P@5']) }}</td><td class="num">{{ "%.3f"|format(v['P@10']) }}</td>
-        <td class="num">{{ "%.3f"|format(v['MAP']) }}</td><td class="num">{{ "%.3f"|format(v['MRR']) }}</td><td class="num">{{ "%.3f"|format(v['nDCG@10']) }}</td></tr>
+        <td class="num">{{ "%.3f"|format(v['MAP']) }}</td><td class="num">{{ "%.3f"|format(v['MRR']) }}</td><td class="num">{{ "%.3f"|format(v['nDCG@10']) }}</td>
+        <td class="num">{{ "%.3f"|format(v['R-prec']) }}</td><td class="num">{{ "%.3f"|format(v['F@10']) }}</td>
+        <td class="num">{{ num(v.cobertura) }}</td><td class="num">{{ num(v.novedad) }}</td></tr>
     {% endfor %}
   </table>
 
@@ -94,7 +103,7 @@ Chart.defaults.color = css.getPropertyValue('--suave').trim();
 Chart.defaults.maintainAspectRatio = false;
 Chart.defaults.borderColor = css.getPropertyValue('--borde').trim();
 const colores = ['#4b3fd6', '#1d7a46', '#b7791f', '#b23b3b', '#2b8fbf', '#8a3fb0'];
-const metricas = ['P@5', 'P@10', 'MAP', 'MRR', 'nDCG@10'];
+const metricas = ['P@5', 'P@10', 'MAP', 'MRR', 'nDCG@10', 'R-prec', 'F@10'];
 const lim = {y: {min: 0, max: 1}};
 
 const indices = Object.keys(M.por_indice);

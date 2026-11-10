@@ -288,7 +288,7 @@ def construir(conf: Configuracion, limite: int | None = None, procesos: int | No
     # Fase 3: idf y normas
     t0 = time.perf_counter()
     df_np = np.frombuffer(dfs.tobytes(), dtype=np.uint32)
-    idf = np.log10(N / df_np.astype(np.float64)).astype(np.float32)
+    idf = np.log2(N / df_np.astype(np.float64)).astype(np.float32)
     post_off_np = np.frombuffer(post_off.tobytes(), dtype=np.uint64).astype(np.int64)
     out.flush()
     normas = calcular_normas(tmp_salida, post_ini, escritos, post_off_np, df_np, idf, N)
@@ -366,7 +366,7 @@ def conf_compacto(texto: str) -> str:
 
 def calcular_normas(ruta: Path, post_ini: int, largo_post: int, post_off: np.ndarray,
                     df: np.ndarray, idf: np.ndarray, N: int, lote_bytes: int = 32 << 20) -> np.ndarray:
-    """|d| = raíz de la suma de w², con w = (1 + log10 tf) * idf (esquema ltc de SMART)."""
+    """|d| = raíz de la suma de w², con w = (1 + log2 tf) * idf, como en la clase del modelo vectorial."""
     norma2 = np.zeros(N, dtype=np.float64)
     V = len(df)
     if V == 0:
@@ -382,7 +382,7 @@ def calcular_normas(ruta: Path, post_ini: int, largo_post: int, post_off: np.nda
         j = min(max(j, i + 1), V)
         docs, tfs, quien = decodificar_lote(np.asarray(mm[post_off[i] : fines[j - 1]]),
                                             post_off[i:j] - post_off[i], df[i:j])
-        w = (1.0 + np.log10(tfs)) * idf[i:j].astype(np.float64)[quien]
+        w = (1.0 + np.log2(tfs)) * idf[i:j].astype(np.float64)[quien]
         norma2 += np.bincount(docs, weights=w * w, minlength=N)
         i = j
     del mm

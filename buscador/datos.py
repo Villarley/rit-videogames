@@ -8,7 +8,8 @@ Todo en un SQLite aparte (buscador/datos/evaluaciones.db), nunca en crawl.db.
   y para qué necesidad de información.
 - mostrados: el ranking exacto que vio la persona evaluadora en esa corrida.
   Las métricas se calculan sobre este ranking, no sobre uno recalculado.
-- juicios: la relevancia que marcó (0 no relevante, 1 algo, 2 muy relevante).
+- juicios: la relevancia que marcó (0 no relevante, 1 algo, 2 muy relevante) y
+  si ya conocía esa página antes de buscar (para cobertura y novedad).
 """
 from __future__ import annotations
 
@@ -61,6 +62,7 @@ CREATE TABLE IF NOT EXISTS juicios (
   corrida_id INTEGER REFERENCES corridas(id),
   page_id INTEGER,
   relevancia INTEGER NOT NULL CHECK (relevancia IN (0, 1, 2)),
+  conocido INTEGER NOT NULL DEFAULT 0,
   ts TEXT NOT NULL,
   PRIMARY KEY (corrida_id, page_id)
 );
@@ -81,6 +83,10 @@ class Datos:
         self.cn.row_factory = sqlite3.Row
         self.cn.execute("PRAGMA journal_mode=WAL")
         self.cn.executescript(ESQUEMA)
+        columnas = {r[1] for r in self.cn.execute("PRAGMA table_info(juicios)")}
+        if "conocido" not in columnas:  # bases creadas antes de agregar cobertura y novedad
+            self.cn.execute("ALTER TABLE juicios ADD COLUMN conocido INTEGER NOT NULL DEFAULT 0")
+            self.cn.commit()
 
     def _ejecutar(self, sql: str, args=()) -> int:
         with self._lock:
@@ -116,11 +122,16 @@ class Datos:
     def mostrados(self, cid: int):
         return self.cn.execute("SELECT * FROM mostrados WHERE corrida_id = ? ORDER BY rango", (cid,)).fetchall()
 
-    def juzgar(self, cid: int, page_id: int, relevancia: int) -> None:
+    def juzgar(self, cid: int, page_id: int, relevancia: int, conocido: bool = False) -> None:
         self._ejecutar(
-            "INSERT INTO juicios (corrida_id, page_id, relevancia, ts) VALUES (?,?,?,?) "
-            "ON CONFLICT(corrida_id, page_id) DO UPDATE SET relevancia = excluded.relevancia, ts = excluded.ts",
-            (cid, page_id, relevancia, ahora()))
+            "INSERT INTO juicios (corrida_id, page_id, relevancia, conocido, ts) VALUES (?,?,?,?,?) "
+            "ON CONFLICT(corrida_id, page_id) DO UPDATE SET relevancia = excluded.relevancia, "
+            "conocido = excluded.conocido, ts = excluded.ts",
+            (cid, page_id, relevancia, int(bool(conocido)), ahora()))
+
+    def conocidos_corrida(self, cid: int) -> set[int]:
+        return {int(r[0]) for r in
+                self.cn.execute("SELECT page_id FROM juicios WHERE corrida_id = ? AND conocido = 1", (cid,))}
 
     def juicios_corrida(self, cid: int) -> dict[int, int]:
         return {int(r[0]): int(r[1]) for r in
