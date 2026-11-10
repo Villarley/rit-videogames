@@ -64,7 +64,7 @@ def test_evaluacion_y_metricas(app):
     assert c.get("/metricas").status_code == 200
     # Rocchio usa los juicios de esa consulta
     html = c.get("/?q=zelda&rocchio=1").get_data(as_text=True)
-    assert "Rocchio" in html
+    assert "Consulta ampliada con Rocchio" in html
 
 
 def test_formulas():
