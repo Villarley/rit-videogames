@@ -45,3 +45,4 @@ indices/
 lucene/target/
 # Datos del buscador (Proyecto 3): juicios de relevancia y bitácora de consultas
 buscador/datos/*.db
+lucene/dependency-reduced-pom.xml
