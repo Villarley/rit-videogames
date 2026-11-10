@@ -4,3 +4,5 @@ lxml
 tldextract
 scrapy
 matplotlib
+numpy
+flask

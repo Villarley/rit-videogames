@@ -39,3 +39,9 @@ repository/*
 
 # Pytest
 .pytest_cache/
+
+# Índices generados (Proyecto 2) y compilación de Lucene
+indices/
+lucene/target/
+# Datos del buscador (Proyecto 3): juicios de relevancia y bitácora de consultas
+buscador/datos/*.db
