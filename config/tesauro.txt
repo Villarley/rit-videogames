@@ -1,6 +1,8 @@
 # Tesauro: sinónimos y variantes de una palabra que se llevan a un término canónico.
 # Mismo formato que nombres.txt ("variante => canonico"). Mezcla inglés y español
-# porque la colección tiene las dos lenguas (164 semillas en inglés, 20 en español).
+# porque la colección tiene las dos lenguas (79% de los documentos en inglés y 18%
+# en español) y el colectivo del Proyecto 1 son personas hispanohablantes que leen
+# en inglés y mezclan los dos idiomas en las consultas ("build mago elden ring").
 videogames => videogame
 videojuego => videogame
 videojuegos => videogame
@@ -64,3 +66,30 @@ resenas => review
 walkthrough => guide
 guia => guide
 guias => guide
+mago => mage
+magos => mage
+hechicero => sorcerer
+hechiceros => sorcerer
+receta => recipe
+recetas => recipe
+pocion => potion
+pociones => potion
+velocidad => speed
+swiftness => speed
+ubicacion => location
+ubicaciones => location
+donde encontrar => location
+amuleto => charm
+amuletos => charm
+requisitos => requirements
+requisitos minimos => minimum requirements
+precio => price
+precios => price
+gratis => free
+linea temporal => timeline
+cronologia => timeline
+espada => sword
+espadas => sword
+armadura => armor
+vendidos => sold
+ventas => sales

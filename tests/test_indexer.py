@@ -91,6 +91,9 @@ def test_nombres_y_tesauro():
     assert a.analizar("the legend of zelda") == ["zelda"]
     assert a.analizar("Videojuegos y video games") == ["videogam", "videogam"]
     assert a.analizar("Pokémon") == ["pokemon"]
+    # consultas mezcladas del colectivo del Proyecto 1 (sección 2.4)
+    assert sorted(a.analizar("build mago elden ring")) == sorted(a.analizar("elden ring mage build"))
+    assert sorted(a.analizar("receta poción")) == sorted(a.analizar("potion recipe"))
 
 
 @pytest.mark.parametrize("politica", ["basico", "stop", "completo"])

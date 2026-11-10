@@ -158,7 +158,7 @@ El formato del `.idx`, con ejemplos de `hexdump -C`, está en [FORMATO_INDICE.md
 
 `python -m buscador --indice indices/completo.idx --indice indices/stop.idx --indice indices/basico.idx`
 
-Aplicación web aparte de la araña y del indexador, sobre el índice propio. Tres modos: Buscar (coseno TF-IDF, enlace a la página original, fragmento resaltado, operadores `+`, `-`, `site:`, `idioma:`, "¿quisiste decir?"), Evaluar (juicios de relevancia graduados por necesidad de información) y Métricas (P@5, P@10, MAP, MRR, nDCG@10, curvas de precisión, kappa de Cohen y estadísticas de uso). La opción "Mejorar con los juicios" aplica la retroalimentación de Rocchio con los juicios guardados.
+Aplicación web gameCrawlers, aparte de la araña y del indexador, sobre el índice propio. Las necesidades de información del modo evaluación salen de las consultas esperadas del documento del Proyecto 1 (sección 2.3). Tres modos: Buscar (coseno TF-IDF, enlace a la página original, fragmento resaltado, operadores `+`, `-`, `site:`, `idioma:`, "¿quisiste decir?"), Evaluar (juicios de relevancia graduados por necesidad de información) y Métricas (P@5, P@10, MAP, MRR, nDCG@10, curvas de precisión, kappa de Cohen y estadísticas de uso). La opción "Mejorar con los juicios" aplica la retroalimentación de Rocchio con los juicios guardados.
 
 ## Pruebas
 

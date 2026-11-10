@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block titulo %}{{ q ~ ' - ' if q }}CheckPoint{% endblock %}
+{% block titulo %}{{ q ~ ' - ' if q }}gameCrawlers{% endblock %}
 {% macro formulario(grande) %}
 <form class="busqueda" action="{{ url_for('buscar') }}" method="get">
   <input type="text" name="q" value="{{ q }}" placeholder="Buscá un juego, un jefe, una fecha..." autofocus>
@@ -18,8 +18,8 @@
 {% if not q %}
 <main>
   <div class="portada">
-    <h1>Check<span>Point</span></h1>
-    <p>Buscador de videojuegos sobre la colección del curso</p>
+    <h1>game<span>Crawlers</span></h1>
+    <p>Buscador temático de videojuegos</p>
   </div>
   {{ formulario(true) }}
   <div class="ayuda">

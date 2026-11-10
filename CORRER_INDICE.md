@@ -30,11 +30,11 @@ Indexa los primeros 20 000 documentos con los dos indexadores y las tres políti
 python -m indexer.benchmark config/basico.conf config/stop.conf config/completo.conf
 ```
 
-Cuánto tarda: en una máquina de 4 núcleos, con la muestra de prueba, el indexador propio fue a 8.5 MiB/s (`completo`) y 13 MiB/s (`basico`), y Lucene más o menos igual. Con 30 GB eso son unos 40 a 60 minutos por índice, entre 4 y 6 horas en total para los seis. Con 8 núcleos, más o menos la mitad. Se puede correr una política sola pasándole un solo `.conf`.
+Cuánto tarda: la colección del Proyecto 1 tiene 1 792 784 documentos y 9.4 GiB de texto. En una máquina de 4 núcleos, con la muestra de prueba, el indexador propio fue a 8.5 MiB/s (`completo`) y 13 MiB/s (`basico`), y Lucene más o menos igual. Eso da entre 12 y 20 minutos por índice, unas 2 horas para los seis. Con 8 núcleos, más o menos la mitad. Se puede correr una política sola pasándole un solo `.conf`.
 
-Espacio libre: unos 40 GB (los índices quedan entre el 13% y el 23% del tamaño del texto, y la mezcla del propio usa archivos temporales en `indices/tmp/`).
+Espacio libre: unos 15 GB (los índices quedan entre el 13% y el 23% del tamaño del texto, y la mezcla del propio usa archivos temporales en `indices/tmp/`).
 
-Memoria: cada proceso indexa 20 000 documentos a la vez (`docs_por_bloque`). Con 16 GB de RAM conviene `--procesos 4`. Si se queda sin memoria, bajar `docs_por_bloque` en el `.conf`.
+Memoria: cada proceso indexa 20 000 documentos a la vez (`docs_por_bloque`), unos 100 MiB de texto. Con 16 GB de RAM conviene `--procesos 4`. Si se queda sin memoria, bajar `docs_por_bloque` en el `.conf`.
 
 Lo que queda:
 
@@ -77,7 +77,7 @@ python -m buscador --indice indices/completo.idx --indice indices/stop.idx --ind
 
 Abre en http://127.0.0.1:5000. Tiene tres modos: Buscar, Evaluar y Métricas. El primer `--indice` es el que se usa por defecto.
 
-El buscador solo necesita el `.idx` y `crawl.db`. Los `.txt` sirven para mostrar el fragmento de cada resultado; si no están, los resultados salen sin fragmento. O sea que se puede llevar `indices/completo.idx` y `repository/crawl.db` a otra compu (con `--base` y `--raiz`) sin copiar los 30 GB.
+El buscador solo necesita el `.idx` y `crawl.db`. Los `.txt` sirven para mostrar el fragmento de cada resultado; si no están, los resultados salen sin fragmento. O sea que se puede llevar `indices/completo.idx` (unos 2 GB) y `repository/crawl.db` (3 GB) a otra compu, con `--base` y `--raiz`, sin copiar los 10 GB de texto.
 
 Para que otras personas evalúen desde su compu en la misma red: `--host 0.0.0.0` y pasarles la IP. Desde fuera de la red, un túnel como `cloudflared tunnel --url http://localhost:5000`.
 

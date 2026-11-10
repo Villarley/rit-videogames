@@ -272,7 +272,7 @@ class Motor:
             if f is None:
                 continue
             r.url = f["final_url"] or f["url"]
-            r.titulo = (f["title"] or "").strip() or r.url
+            r.titulo = arreglar_codificacion((f["title"] or "").strip()) or r.url
             r.dominio = (urlparse(r.url).hostname or "").lower()
             r.idioma = f["language"] or ""
             if fragmentos and f["text_path"]:
@@ -384,6 +384,23 @@ class Motor:
         f = self._db.execute("SELECT id, url, final_url, title, language, crawler_source FROM pages WHERE id = ?",
                              (page_id,)).fetchone()
         return dict(f) if f else None
+
+
+def arreglar_codificacion(s: str) -> str:
+    """Repara títulos como "DesirÃ©e" (UTF-8 leído como ISO-8859-1).
+
+    Es el bug de codificación del Proyecto 1 (fetcher.py, cuando el servidor no
+    manda charset). Si el texto vuelve a UTF-8 válido al recodificarlo, era eso.
+    """
+    if "Ã" not in s and "â€" not in s:
+        return s
+    try:
+        return s.encode("cp1252").decode("utf-8")
+    except (UnicodeEncodeError, UnicodeDecodeError):
+        try:
+            return s.encode("latin-1").decode("utf-8")
+        except (UnicodeEncodeError, UnicodeDecodeError):
+            return s
 
 
 def _ediciones(p: str) -> set[str]:

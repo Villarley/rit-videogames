@@ -3,12 +3,12 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>{% block titulo %}CheckPoint{% endblock %}</title>
+  <title>{% block titulo %}gameCrawlers{% endblock %}</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='estilo.css') }}">
 </head>
 <body>
   <header class="barra">
-    <a class="logo" href="{{ url_for('buscar') }}">Check<span>Point</span></a>
+    <a class="logo" href="{{ url_for('buscar') }}">game<span>Crawlers</span></a>
     <nav>
       <a href="{{ url_for('buscar') }}" class="{{ 'activo' if request.endpoint == 'buscar' }}">Buscar</a>
       <a href="{{ url_for('evaluar') }}" class="{{ 'activo' if request.endpoint in ('evaluar', 'corrida', 'nueva_corrida') }}">Evaluar</a>

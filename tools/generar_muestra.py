@@ -1,6 +1,6 @@
 """Genera una colección de prueba con el mismo formato que deja la araña.
 
-La colección real (~30 GB) no está en esta máquina. Para probar los
+La colección real (9.4 GiB, 1.8 millones de páginas) no está en esta máquina. Para probar los
 indexadores y medir velocidad se arma una muestra: repository/crawl.db con la
 tabla pages y un .txt por página, igual que crawler/storage.py.
 

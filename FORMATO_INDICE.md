@@ -113,7 +113,7 @@ N registros de 16 bytes. El número interno de un documento (el que aparece en l
 
 La primera línea es la cabecera de la sección (DOCS, 20 000 registros, 320 000 bytes). El documento 0 tiene page_id 1, 428 términos, 389 distintos y norma 31.48.
 
-La URL y el título no se repiten en el índice: el buscador los saca de `crawl.db` con el page_id. Con 30 GB de texto eso son varios cientos de MB que el índice no tiene que cargar.
+La URL y el título no se repiten en el índice: el buscador los saca de `crawl.db` con el page_id. Con 1.8 millones de páginas eso son cientos de MB que el índice no tiene que cargar.
 
 ## El modelo vectorial que queda guardado
 
