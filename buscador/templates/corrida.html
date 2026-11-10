@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block titulo %}Evaluando - CheckPoint{% endblock %}
+{% block cuerpo %}
+<main>
+  <div class="necesidad">
+    <div class="chip">Evalúa {{ c.evaluador }} · índice {{ c.indice }}</div>
+    {% if necesidad %}<h2 style="margin: 8px 0 4px">{{ necesidad.titulo }}</h2><p style="margin: 0">{{ necesidad.descripcion }}</p>{% endif %}
+    <p style="margin: 8px 0 0; color: var(--suave)">Consulta: "{{ c.consulta }}" · {{ "{:,}".format(c.total or 0) }} resultados</p>
+  </div>
+  <div class="progreso"><div id="barra" style="width: {{ (100 * juicios|length / (resultados|length or 1))|round }}%"></div></div>
+  <p id="cuenta" style="color: var(--suave); font-size: 14px">{{ juicios|length }} de {{ resultados|length }} juzgados</p>
+  {% for x in resultados %}
+  <div class="resultado">
+    <div class="url">{{ x.url }}</div>
+    <h3><a href="{{ x.url }}" target="_blank" rel="noopener">{{ x.titulo }}</a></h3>
+    <div class="frag">{{ x.fragmento|safe }}</div>
+    <div class="juicio" data-page="{{ x.page_id }}">
+      {% set j = juicios.get(x.page_id) %}
+      <button data-rel="2" class="{{ 'sel' if j == 2 }}">Muy relevante</button>
+      <button data-rel="1" class="{{ 'sel' if j == 1 }}">Algo relevante</button>
+      <button data-rel="0" class="{{ 'sel' if j == 0 }}">No relevante</button>
+      <span class="meta">#{{ x.rango }}</span>
+    </div>
+  </div>
+  {% endfor %}
+  <p><a class="boton" href="{{ url_for('evaluar') }}">Evaluar otra necesidad</a>
+     <a href="{{ url_for('ver_metricas') }}" style="margin-left: 12px">Ver métricas</a></p>
+</main>
+<script>
+const total = {{ resultados|length }};
+document.querySelectorAll('.juicio').forEach(caja => {
+  caja.querySelectorAll('button').forEach(b => b.addEventListener('click', async () => {
+    const r = await fetch('{{ url_for("juicio") }}', {method: 'POST', headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({corrida: {{ c.id }}, page_id: Number(caja.dataset.page), relevancia: Number(b.dataset.rel)})});
+    if (!r.ok) { alert('No se pudo guardar el juicio'); return; }
+    const d = await r.json();
+    caja.querySelectorAll('button').forEach(x => x.classList.remove('sel'));
+    b.classList.add('sel');
+    document.getElementById('cuenta').textContent = d.juzgados + ' de ' + total + ' juzgados';
+    document.getElementById('barra').style.width = (100 * d.juzgados / total) + '%';
+  }));
+});
+</script>
+{% endblock %}

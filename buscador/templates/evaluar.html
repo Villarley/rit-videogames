@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block titulo %}Evaluar - CheckPoint{% endblock %}
+{% block cuerpo %}
+<main>
+  <h2>Modo evaluación</h2>
+  <p>Escogé una necesidad de información (o escribí tu propia consulta). Vas a ver los primeros 10 resultados y para cada uno
+     marcás si es muy relevante, algo relevante o no relevante. Con eso se calculan las métricas.</p>
+  {% if error %}<div class="aviso">{{ error }}</div>{% endif %}
+  <form method="post" action="{{ url_for('nueva_corrida') }}">
+    <fieldset>
+      <legend>Quién evalúa</legend>
+      <input type="text" name="evaluador" value="{{ evaluador }}" placeholder="Tu nombre" required style="width: 100%">
+    </fieldset>
+    <fieldset>
+      <legend>Necesidad de información</legend>
+      {% for n in necesidades %}
+      <label class="opcion"><input type="radio" name="necesidad" value="{{ n.id }}" {{ 'checked' if loop.first }}>
+        <b>{{ n.titulo }}</b><small>{{ n.descripcion }} Consulta: "{{ n.consulta }}"</small></label>
+      {% endfor %}
+      <label class="opcion"><input type="radio" name="necesidad" value=""> <b>Otra</b><small>Escribí la consulta abajo.</small></label>
+      <input type="text" name="consulta" placeholder="Consulta propia (opcional si escogiste una necesidad)" style="width: 100%; margin-top: 8px">
+    </fieldset>
+    <fieldset>
+      <legend>Índice</legend>
+      <select name="indice">{% for i in indices %}<option value="{{ i }}" {{ 'selected' if i == indice }}>{{ i }}</option>{% endfor %}</select>
+      <small style="color: var(--suave)">Evaluar la misma necesidad con varios índices permite comparar las políticas de normalización.</small>
+    </fieldset>
+    <button type="submit">Empezar a evaluar</button>
+  </form>
+</main>
+{% endblock %}

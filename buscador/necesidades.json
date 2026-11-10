@@ -1,0 +1,12 @@
+[
+  {"id": "N01", "titulo": "Cómo derrotar a los jefes de Elden Ring", "descripcion": "Busco estrategias, debilidades y ubicaciones de los jefes principales de Elden Ring. Es relevante una página que explique cómo vencer al menos a un jefe concreto.", "consulta": "elden ring boss strategy weakness"},
+  {"id": "N02", "titulo": "Fechas de lanzamiento de juegos de Nintendo Switch", "descripcion": "Quiero saber cuándo salió o sale un juego de Switch. Es relevante si da la fecha de lanzamiento de algún juego de la consola.", "consulta": "nintendo switch release date"},
+  {"id": "N03", "titulo": "Jefes y progresión en Terraria", "descripcion": "Orden recomendado para enfrentar jefes en Terraria y qué equipo usar. Relevante si explica requisitos o el orden de jefes.", "consulta": "terraria boss progression"},
+  {"id": "N04", "titulo": "Historia de la saga The Legend of Zelda", "descripcion": "Información sobre la cronología o la historia de los juegos de Zelda. Relevante si habla de la trama o de la línea de tiempo de la saga.", "consulta": "legend of zelda timeline history"},
+  {"id": "N05", "titulo": "Builds y clases en Baldur's Gate 3", "descripcion": "Recomendaciones de clases, subclases y builds para Baldur's Gate 3. Relevante si propone o analiza un build.", "consulta": "baldur's gate 3 build class"},
+  {"id": "N06", "titulo": "Crafteo y recetas en Minecraft", "descripcion": "Cómo fabricar objetos en Minecraft. Relevante si muestra la receta o los materiales de algún objeto.", "consulta": "minecraft crafting recipe"},
+  {"id": "N07", "titulo": "Juegos más vendidos de la historia", "descripcion": "Listas o datos de ventas de los videojuegos más vendidos. Relevante si da cifras de ventas.", "consulta": "best-selling video games sales"},
+  {"id": "N08", "titulo": "Análisis de juegos indie recientes", "descripcion": "Reseñas o análisis de videojuegos independientes. Relevante si es una reseña de un juego indie.", "consulta": "indie game review"},
+  {"id": "N09", "titulo": "Videojuegos en español: noticias de lanzamientos", "descripcion": "Noticias en español sobre lanzamientos de videojuegos. Relevante si la página está en español y anuncia o comenta un lanzamiento.", "consulta": "lanzamiento videojuego idioma:es"},
+  {"id": "N10", "titulo": "Cultivos y temporadas en Stardew Valley", "descripcion": "Qué cultivos plantar en cada estación de Stardew Valley. Relevante si habla de cultivos y estaciones.", "consulta": "stardew valley crops season"}
+]

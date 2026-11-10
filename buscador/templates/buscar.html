@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+{% block titulo %}{{ q ~ ' - ' if q }}CheckPoint{% endblock %}
+{% macro formulario(grande) %}
+<form class="busqueda" action="{{ url_for('buscar') }}" method="get">
+  <input type="text" name="q" value="{{ q }}" placeholder="Buscá un juego, un jefe, una fecha..." autofocus>
+  <button type="submit">Buscar</button>
+  <div class="opciones" style="flex-basis: 100%">
+    <label>Índice
+      <select name="indice">
+        {% for i in indices %}<option value="{{ i }}" {{ 'selected' if i == indice }}>{{ i }}</option>{% endfor %}
+      </select>
+    </label>
+    <label><input type="checkbox" name="rocchio" value="1" {{ 'checked' if rocchio }}> Mejorar con los juicios (Rocchio)</label>
+  </div>
+</form>
+{% endmacro %}
+{% block cuerpo %}
+{% if not q %}
+<main>
+  <div class="portada">
+    <h1>Check<span>Point</span></h1>
+    <p>Buscador de videojuegos sobre la colección del curso</p>
+  </div>
+  {{ formulario(true) }}
+  <div class="ayuda">
+    Operadores: <code>+jefe</code> obligatorio, <code>-dlc</code> excluir, <code>site:minecraft.wiki</code>,
+    <code>-site:kotaku.com</code>, <code>idioma:es</code>, <code>fuente:scrapy</code>. Las fechas se pueden escribir
+    como quieras: <code>5 de octubre de 2023</code> encuentra "Oct 5, 2023".
+  </div>
+</main>
+{% else %}
+<main>
+  {{ formulario(false) }}
+  {% if r.sugerencia %}
+  <div class="aviso">¿Quisiste decir <a href="{{ url_for('buscar', q=r.sugerencia, indice=indice) }}"><b>{{ r.sugerencia }}</b></a>?</div>
+  {% endif %}
+  {% if aviso_rocchio %}<div class="aviso">{{ aviso_rocchio }}</div>{% endif %}
+  {% if r.expansion %}
+  <div class="aviso">Consulta ampliada con Rocchio:
+    {% for t, w in r.expansion %}<span class="chip">{{ t }}</span> {% endfor %}
+  </div>
+  {% endif %}
+  <div class="resumen">
+    {{ "{:,}".format(r.total) }} resultados en {{ "%.1f"|format(r.ms) }} ms · índice {{ indice }}
+    {% if r.pesos %}· términos: {% for t, w in r.pesos.items() %}<span class="chip" title="peso {{ '%.3f'|format(w) }}">{{ t }}</span> {% endfor %}{% endif %}
+    {% if r.desconocidos %}· no están en el índice: {{ r.desconocidos|join(', ') }}{% endif %}
+  </div>
+  {% for x in r.resultados %}
+  <div class="resultado">
+    <div class="url">{{ x.url }}</div>
+    <h3><a href="{{ url_for('ir', consulta_id=consulta_id, rango=x.rango, page_id=x.page_id) }}" target="_blank" rel="noopener">{{ x.titulo }}</a></h3>
+    <div class="frag">{{ x.fragmento|safe }}</div>
+    <div class="meta"><span>#{{ x.rango }}</span><span>{{ x.dominio }}</span>{% if x.idioma %}<span>{{ x.idioma }}</span>{% endif %}<span>coseno {{ "%.4f"|format(x.puntaje) }}</span></div>
+  </div>
+  {% else %}
+  <p>No hay resultados.</p>
+  {% endfor %}
+  {% if paginas > 1 %}
+  <div class="paginas">
+    {% set ini = [1, pagina - 4]|max %}{% set fin = [paginas, ini + 9]|min %}
+    {% if pagina > 1 %}<a href="{{ url_for('buscar', q=q, indice=indice, p=pagina-1, rocchio='1' if rocchio else None) }}">‹</a>{% endif %}
+    {% for n in range(ini, fin + 1) %}
+      {% if n == pagina %}<span>{{ n }}</span>{% else %}<a href="{{ url_for('buscar', q=q, indice=indice, p=n, rocchio='1' if rocchio else None) }}">{{ n }}</a>{% endif %}
+    {% endfor %}
+    {% if pagina < paginas %}<a href="{{ url_for('buscar', q=q, indice=indice, p=pagina+1, rocchio='1' if rocchio else None) }}">›</a>{% endif %}
+  </div>
+  {% endif %}
+</main>
+{% endif %}
+{% endblock %}

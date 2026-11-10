@@ -1,0 +1,126 @@
+{% extends "base.html" %}
+{% block titulo %}Métricas - CheckPoint{% endblock %}
+{% block cuerpo %}
+<main class="ancho">
+  <h2>Métricas</h2>
+  <p style="color: var(--suave)">Calculadas sobre el ranking exacto que vio cada persona en el modo evaluación. Un resultado sin juicio
+     cuenta como no relevante. R (para MAP) son los relevantes distintos conocidos de cada necesidad, juntando a todos los evaluadores.
+     <a href="{{ url_for('exportar') }}">Exportar juicios (JSON)</a> · <a href="{{ url_for('corridas_csv') }}">Corridas (CSV)</a></p>
+
+  <div class="tarjetas">
+    {% set g = m.global %}
+    <div class="tarjeta"><div class="valor">{{ "%.3f"|format(g['MAP']) }}</div><div class="nombre">MAP</div></div>
+    <div class="tarjeta"><div class="valor">{{ "%.3f"|format(g['P@5']) }}</div><div class="nombre">P@5</div></div>
+    <div class="tarjeta"><div class="valor">{{ "%.3f"|format(g['P@10']) }}</div><div class="nombre">P@10</div></div>
+    <div class="tarjeta"><div class="valor">{{ "%.3f"|format(g['MRR']) }}</div><div class="nombre">MRR</div></div>
+    <div class="tarjeta"><div class="valor">{{ "%.3f"|format(g['nDCG@10']) }}</div><div class="nombre">nDCG@10</div></div>
+    <div class="tarjeta"><div class="valor">{{ g.corridas }}</div><div class="nombre">corridas evaluadas</div></div>
+    <div class="tarjeta"><div class="valor">{{ m.juicios_total }}</div><div class="nombre">juicios</div></div>
+    <div class="tarjeta"><div class="valor">{{ m.por_evaluador|length }}</div><div class="nombre">evaluadores</div></div>
+  </div>
+
+  <div class="graficos">
+    <div class="grafico"><h3>Métricas por índice (política de normalización)</h3><div class="lienzo"><canvas id="g_indices"></canvas></div></div>
+    <div class="grafico"><h3>Precisión en k (k = 1..10)</h3><div class="lienzo"><canvas id="g_pk"></canvas></div></div>
+    <div class="grafico"><h3>Precisión interpolada contra recall (11 puntos)</h3><div class="lienzo"><canvas id="g_rp"></canvas></div></div>
+    <div class="grafico"><h3>Métricas por necesidad de información</h3><div class="lienzo"><canvas id="g_necesidades"></canvas></div></div>
+    <div class="grafico"><h3>Juicios por nivel de relevancia</h3><div class="lienzo"><canvas id="g_rel"></canvas></div></div>
+    <div class="grafico"><h3>Clics por posición del resultado</h3><div class="lienzo"><canvas id="g_clics"></canvas></div></div>
+    <div class="grafico"><h3>Consultas por día</h3><div class="lienzo"><canvas id="g_dias"></canvas></div></div>
+  </div>
+
+  <h3 style="margin-top: 28px">Uso del buscador</h3>
+  {% set u = m.uso %}
+  <div class="tarjetas">
+    <div class="tarjeta"><div class="valor">{{ u.consultas }}</div><div class="nombre">consultas</div></div>
+    <div class="tarjeta"><div class="valor">{{ u.sesiones }}</div><div class="nombre">sesiones</div></div>
+    <div class="tarjeta"><div class="valor">{{ "%.1f"|format(u.latencia_p50) }} ms</div><div class="nombre">latencia mediana</div></div>
+    <div class="tarjeta"><div class="valor">{{ "%.1f"|format(u.latencia_p95) }} ms</div><div class="nombre">latencia p95</div></div>
+    <div class="tarjeta"><div class="valor">{{ "%.0f"|format(100 * u.ctr) }}%</div><div class="nombre">consultas con clic</div></div>
+    <div class="tarjeta"><div class="valor">{{ "%.0f"|format(100 * u.proporcion_sin_resultados) }}%</div><div class="nombre">sin resultados</div></div>
+    <div class="tarjeta"><div class="valor">{{ u.con_rocchio }}</div><div class="nombre">con Rocchio</div></div>
+    <div class="tarjeta"><div class="valor">{{ u.con_sugerencia }}</div><div class="nombre">con "¿quisiste decir?"</div></div>
+  </div>
+
+  <h3>Por índice</h3>
+  <table>
+    <tr><th>Índice</th><th>Corridas</th><th>P@5</th><th>P@10</th><th>MAP</th><th>MRR</th><th>nDCG@10</th></tr>
+    {% for k, v in m.por_indice.items() %}
+    <tr><td>{{ k }}</td><td class="num">{{ v.corridas }}</td><td class="num">{{ "%.3f"|format(v['P@5']) }}</td><td class="num">{{ "%.3f"|format(v['P@10']) }}</td>
+        <td class="num">{{ "%.3f"|format(v['MAP']) }}</td><td class="num">{{ "%.3f"|format(v['MRR']) }}</td><td class="num">{{ "%.3f"|format(v['nDCG@10']) }}</td></tr>
+    {% endfor %}
+  </table>
+
+  <h3>Por necesidad</h3>
+  <table>
+    <tr><th>Necesidad</th><th>Corridas</th><th>P@5</th><th>P@10</th><th>MAP</th><th>MRR</th><th>nDCG@10</th></tr>
+    {% for k, v in m.por_necesidad.items() %}
+    <tr><td>{{ k }}</td><td class="num">{{ v.corridas }}</td><td class="num">{{ "%.3f"|format(v['P@5']) }}</td><td class="num">{{ "%.3f"|format(v['P@10']) }}</td>
+        <td class="num">{{ "%.3f"|format(v['MAP']) }}</td><td class="num">{{ "%.3f"|format(v['MRR']) }}</td><td class="num">{{ "%.3f"|format(v['nDCG@10']) }}</td></tr>
+    {% endfor %}
+  </table>
+
+  <h3>Acuerdo entre evaluadores (kappa de Cohen)</h3>
+  {% if m.acuerdo %}
+  <table>
+    <tr><th>Evaluador A</th><th>Evaluador B</th><th>Documentos en común</th><th>Kappa</th></tr>
+    {% for a in m.acuerdo %}
+    <tr><td>{{ a.a }}</td><td>{{ a.b }}</td><td class="num">{{ a.pares }}</td><td class="num">{{ "%.3f"|format(a.kappa) }}</td></tr>
+    {% endfor %}
+  </table>
+  {% else %}
+  <p style="color: var(--suave)">Hace falta que dos personas evalúen la misma necesidad para calcularlo.</p>
+  {% endif %}
+
+  <h3>Por evaluador</h3>
+  <table>
+    <tr><th>Evaluador</th><th>Corridas</th><th>Juicios</th><th>P@10</th><th>MAP</th></tr>
+    {% for k, v in m.por_evaluador.items() %}
+    <tr><td>{{ k }}</td><td class="num">{{ v.corridas }}</td><td class="num">{{ v.juicios }}</td><td class="num">{{ "%.3f"|format(v['P@10']) }}</td><td class="num">{{ "%.3f"|format(v['MAP']) }}</td></tr>
+    {% endfor %}
+  </table>
+
+  <h3>Consultas más frecuentes</h3>
+  <table>
+    <tr><th>Consulta</th><th>Veces</th></tr>
+    {% for q, n in u.mas_buscadas %}<tr><td>{{ q }}</td><td class="num">{{ n }}</td></tr>{% endfor %}
+  </table>
+</main>
+<script src="{{ url_for('static', filename='chart.umd.js') }}"></script>
+<script>
+const M = {{ m|tojson }};
+const css = getComputedStyle(document.documentElement);
+Chart.defaults.color = css.getPropertyValue('--suave').trim();
+Chart.defaults.maintainAspectRatio = false;
+Chart.defaults.borderColor = css.getPropertyValue('--borde').trim();
+const colores = ['#4b3fd6', '#1d7a46', '#b7791f', '#b23b3b', '#2b8fbf', '#8a3fb0'];
+const metricas = ['P@5', 'P@10', 'MAP', 'MRR', 'nDCG@10'];
+const lim = {y: {min: 0, max: 1}};
+
+const indices = Object.keys(M.por_indice);
+new Chart(g_indices, {type: 'bar', data: {labels: metricas, datasets: indices.map((k, i) => ({
+  label: k, data: metricas.map(x => M.por_indice[k][x]), backgroundColor: colores[i % colores.length]}))},
+  options: {scales: lim}});
+
+new Chart(g_pk, {type: 'line', data: {labels: [1,2,3,4,5,6,7,8,9,10], datasets: Object.entries(M.curva_p_en_k).map(([k, v], i) => ({
+  label: k, data: v, borderColor: colores[i % colores.length], tension: .2}))}, options: {scales: lim}});
+
+new Chart(g_rp, {type: 'line', data: {labels: [0,.1,.2,.3,.4,.5,.6,.7,.8,.9,1], datasets: Object.entries(M.recall_precision).map(([k, v], i) => ({
+  label: k, data: v, borderColor: colores[i % colores.length], tension: .2}))},
+  options: {scales: {...lim, x: {title: {display: true, text: 'recall'}}}}});
+
+const nec = Object.keys(M.por_necesidad);
+new Chart(g_necesidades, {type: 'bar', data: {labels: nec, datasets: ['P@10', 'MAP', 'nDCG@10'].map((x, i) => ({
+  label: x, data: nec.map(k => M.por_necesidad[k][x]), backgroundColor: colores[i]}))}, options: {scales: lim}});
+
+const rel = M.distribucion_relevancia;
+new Chart(g_rel, {type: 'doughnut', data: {labels: ['No relevante', 'Algo relevante', 'Muy relevante'],
+  datasets: [{data: [rel['0'] || 0, rel['1'] || 0, rel['2'] || 0], backgroundColor: ['#b23b3b', '#b7791f', '#1d7a46']}]}});
+
+const cl = M.uso.clics_por_rango;
+new Chart(g_clics, {type: 'bar', data: {labels: Object.keys(cl), datasets: [{label: 'clics', data: Object.values(cl), backgroundColor: colores[0]}]}});
+
+const dias = M.uso.por_dia;
+new Chart(g_dias, {type: 'line', data: {labels: Object.keys(dias), datasets: [{label: 'consultas', data: Object.values(dias), borderColor: colores[1], fill: false}]}});
+</script>
+{% endblock %}
