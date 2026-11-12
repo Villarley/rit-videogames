@@ -28,6 +28,11 @@ rit-videogames/
 ├── crawler/              # Arañador propio (frontier SQLite, hilos)
 ├── scrapy_crawler/       # Arañador Scrapy (JOBDIR, mismas políticas de contenido)
 ├── analysis/             # progress, stats, salida en analysis/output/
+├── config/               # Proyecto 2: políticas de normalización (.conf) y listas
+├── indexer/              # Proyecto 2: indexador propio (.idx), inspector, benchmark
+├── lucene/               # Proyecto 2: indexador con Apache Lucene (Maven)
+├── buscador/             # Proyecto 3: aplicación web de búsqueda y evaluación
+├── tools/                # muestra de prueba y empaquetado de entregas
 ├── seeds/                # seeds.csv (semillas y partición por arañador)
 ├── repository/           # Generado al crawlear (no versionado en git)
 ├── tests/                # Pruebas (pytest)
@@ -134,6 +139,26 @@ Flags útiles (ver `--help`):
 ## Estadísticas
 
 `python -m analysis.stats` escribe en `analysis/output/` (JSON, Markdown, CSV, gráficas Zipf y dominios). Opciones: `--db`, `--text-root`, `--out`, `--workers`, `--source custom|scrapy`, `--limit`, `--export-metadata`.
+
+## Proyecto 2: el índice
+
+Dos indexadores aparte de la araña, con las mismas políticas de normalización:
+
+| Implementación | Comando | Salida |
+|----------------|---------|--------|
+| Propio (Python, SPIMI, archivo binario) | `python -m indexer.construir config/completo.conf` | `indices/completo.idx` |
+| Apache Lucene 9 (Java) | `java -jar lucene/target/indexador-lucene.jar indexar config/completo.conf` | `indices/lucene-completo/` |
+| Los dos y la comparación | `python -m indexer.benchmark config/*.conf` | `indices/reporte/` |
+
+Tres políticas en `config/` (formato INI de Linux): `basico.conf` (plegado de tildes y minúsculas), `stop.conf` (más fechas, números y palabras vacías) y `completo.conf` (más nombres de varias palabras, tesauro y raíces de Porter). Las listas que usan están en `config/stopwords.txt`, `config/plegado.txt`, `config/nombres.txt` y `config/tesauro.txt`, y las leen los dos indexadores.
+
+El formato del `.idx`, con ejemplos de `hexdump -C`, está en [FORMATO_INDICE.md](FORMATO_INDICE.md). La guía para correr todo sobre la colección completa está en [CORRER_INDICE.md](CORRER_INDICE.md).
+
+## Proyecto 3: búsqueda y evaluación
+
+`python -m buscador --indice indices/completo.idx --indice indices/stop.idx --indice indices/basico.idx`
+
+Aplicación web gameCrawlers, aparte de la araña y del indexador, sobre el índice propio. Las necesidades de información del modo evaluación salen de las consultas esperadas del documento del Proyecto 1 (sección 2.3). Tres modos: Buscar (coseno TF-IDF, enlace a la página original, fragmento resaltado, operadores `+`, `-`, `site:`, `idioma:`, "¿quisiste decir?"), Evaluar (juicios de relevancia graduados por necesidad de información) y Métricas (P@5, P@10, MAP, MRR, nDCG@10, curvas de precisión, kappa de Cohen y estadísticas de uso). La opción "Mejorar con los juicios" aplica la retroalimentación de Rocchio con los juicios guardados.
 
 ## Pruebas
 

@@ -1,0 +1,82 @@
+:root {
+  --fondo: #f6f7f9; --panel: #ffffff; --texto: #1d2330; --suave: #5b6475; --borde: #e1e4ea;
+  --acento: #4b3fd6; --acento-suave: #ecebff; --url: #1d7a46; --marca: #fff1a8;
+  --rel2: #1d7a46; --rel1: #b7791f; --rel0: #b23b3b;
+}
+@media (prefers-color-scheme: dark) {
+  :root { --fondo: #12141a; --panel: #1b1e27; --texto: #e6e8ee; --suave: #9aa3b5; --borde: #2c3140;
+          --acento: #8f86ff; --acento-suave: #262447; --url: #5fcf8f; --marca: #5a4b00; }
+}
+* { box-sizing: border-box; }
+body { margin: 0; font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; background: var(--fondo);
+       color: var(--texto); line-height: 1.5; }
+a { color: var(--acento); }
+header.barra { display: flex; align-items: center; gap: 24px; padding: 12px 24px; background: var(--panel);
+               border-bottom: 1px solid var(--borde); flex-wrap: wrap; }
+.logo { font-weight: 800; font-size: 20px; letter-spacing: -0.5px; text-decoration: none; color: var(--texto); }
+.logo span { color: var(--acento); }
+nav a { margin-right: 16px; text-decoration: none; color: var(--suave); font-weight: 500; }
+nav a.activo { color: var(--acento); border-bottom: 2px solid var(--acento); padding-bottom: 4px; }
+main { max-width: 860px; margin: 0 auto; padding: 24px 16px 64px; }
+main.ancho { max-width: 1180px; }
+.portada { text-align: center; margin-top: 12vh; }
+.portada h1 { font-size: 56px; margin: 0 0 8px; letter-spacing: -2px; }
+.portada h1 span { color: var(--acento); }
+.portada p { color: var(--suave); margin-top: 0; }
+form.busqueda { display: flex; gap: 8px; flex-wrap: wrap; }
+form.busqueda input[type=text] { flex: 1 1 360px; padding: 12px 16px; font-size: 16px; border-radius: 24px;
+  border: 1px solid var(--borde); background: var(--panel); color: var(--texto); }
+form.busqueda input[type=text]:focus { outline: 2px solid var(--acento); border-color: transparent; }
+button, .boton { padding: 10px 18px; border-radius: 20px; border: 0; background: var(--acento); color: #fff;
+  font-weight: 600; cursor: pointer; font-size: 14px; text-decoration: none; display: inline-block; }
+button.secundario { background: var(--acento-suave); color: var(--acento); }
+select, input, textarea { font: inherit; color: var(--texto); background: var(--panel); border: 1px solid var(--borde);
+  border-radius: 8px; padding: 8px 10px; }
+.opciones { display: flex; gap: 16px; align-items: center; color: var(--suave); font-size: 14px; margin-top: 10px;
+  flex-wrap: wrap; }
+.ayuda { font-size: 13px; color: var(--suave); margin-top: 14px; }
+.ayuda code { background: var(--acento-suave); padding: 1px 6px; border-radius: 4px; }
+.resumen { color: var(--suave); font-size: 14px; margin: 18px 0 8px; }
+.aviso { background: var(--acento-suave); padding: 10px 14px; border-radius: 8px; margin: 12px 0; font-size: 14px; }
+.resultado { background: var(--panel); border: 1px solid var(--borde); border-radius: 12px; padding: 14px 18px;
+  margin: 12px 0; }
+.resultado .url { color: var(--url); font-size: 13px; word-break: break-all; }
+.resultado h3 { margin: 2px 0 6px; font-size: 18px; font-weight: 600; }
+.resultado h3 a { text-decoration: none; }
+.resultado h3 a:hover { text-decoration: underline; }
+.resultado .frag { color: var(--suave); font-size: 14px; }
+mark { background: var(--marca); color: inherit; padding: 0 2px; border-radius: 3px; }
+.meta { font-size: 12px; color: var(--suave); margin-top: 6px; display: flex; gap: 12px; flex-wrap: wrap; }
+.chip { background: var(--acento-suave); color: var(--acento); border-radius: 10px; padding: 1px 8px; font-size: 12px; }
+.paginas { display: flex; gap: 6px; margin-top: 18px; flex-wrap: wrap; }
+.paginas a, .paginas span { padding: 6px 12px; border-radius: 8px; border: 1px solid var(--borde); text-decoration: none; }
+.paginas span { background: var(--acento); color: #fff; border-color: var(--acento); }
+.tarjetas { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin: 16px 0; }
+.tarjeta { background: var(--panel); border: 1px solid var(--borde); border-radius: 12px; padding: 14px; }
+.tarjeta .valor { font-size: 28px; font-weight: 700; }
+.tarjeta .nombre { font-size: 13px; color: var(--suave); }
+.graficos { display: grid; grid-template-columns: repeat(auto-fit, minmax(420px, 1fr)); gap: 16px; }
+.grafico { background: var(--panel); border: 1px solid var(--borde); border-radius: 12px; padding: 14px; }
+.grafico h3 { margin: 0 0 8px; font-size: 15px; }
+table { border-collapse: collapse; width: 100%; background: var(--panel); border-radius: 12px; overflow: hidden;
+  font-size: 14px; }
+th, td { padding: 8px 10px; border-bottom: 1px solid var(--borde); text-align: left; }
+th { color: var(--suave); font-weight: 600; }
+td.num { text-align: right; font-variant-numeric: tabular-nums; }
+.juicio { display: flex; gap: 6px; margin-top: 10px; flex-wrap: wrap; }
+.juicio button { background: var(--acento-suave); color: var(--texto); font-weight: 500; }
+.juicio button.sel[data-rel="2"] { background: var(--rel2); color: #fff; }
+.juicio button.sel[data-rel="1"] { background: var(--rel1); color: #fff; }
+.juicio button.sel[data-rel="0"] { background: var(--rel0); color: #fff; }
+.necesidad { background: var(--panel); border: 1px solid var(--borde); border-radius: 12px; padding: 14px 18px; }
+.progreso { height: 8px; background: var(--borde); border-radius: 4px; overflow: hidden; margin: 8px 0 16px; }
+.progreso div { height: 100%; background: var(--acento); transition: width .2s; }
+fieldset { border: 1px solid var(--borde); border-radius: 12px; padding: 14px 18px; margin: 14px 0; background: var(--panel); }
+legend { font-weight: 600; padding: 0 6px; }
+label.opcion { display: block; padding: 8px 6px; border-radius: 8px; cursor: pointer; }
+label.opcion:hover { background: var(--acento-suave); }
+label.opcion small { display: block; color: var(--suave); margin-left: 24px; }
+@media (max-width: 600px) { .graficos { grid-template-columns: 1fr; } .portada h1 { font-size: 40px; } }
+.lienzo { position: relative; height: 280px; }
+.necesidad .chip { display: inline-block; }
+.juicio .conocido { display: inline-flex; align-items: center; gap: 4px; margin: 0 0 0 6px; cursor: pointer; }

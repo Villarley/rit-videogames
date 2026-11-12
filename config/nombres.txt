@@ -1,0 +1,55 @@
+# Nombres propios de varias palabras que se guardan como un solo término.
+# Formato de sinónimos de Solr/Lucene, solo reglas explícitas: "frase => termino".
+# El lado izquierdo pasa por el mismo plegado y minúsculas que el texto, así que
+# "Pokémon Red" y "pokemon red" caen en la misma regla. Gana la frase más larga.
+# Sale de los títulos y sagas que más se repiten en las semillas (wikis por juego).
+the legend of zelda => zelda
+legend of zelda => zelda
+breath of the wild => zeldabotw
+tears of the kingdom => zeldatotk
+super mario bros => supermariobro
+super mario => supermario
+mario kart => mariokart
+super smash bros => smashbro
+smash bros => smashbro
+grand theft auto => gta
+call of duty => cod
+elden ring => eldenring
+dark souls => darksouls
+final fantasy => finalfantasy
+final fantasy xiv => ffxiv
+world of warcraft => wow
+league of legends => lol
+counter strike => counterstrike
+red dead redemption => rdr
+hollow knight => hollowknight
+stardew valley => stardewvalley
+baldur s gate => baldursgate
+baldurs gate => baldursgate
+animal crossing => animalcrossing
+fire emblem => fireemblem
+dead cells => deadcells
+risk of rain => riskofrain
+slay the spire => slaythespire
+oxygen not included => oxygennotincluded
+don t starve => dontstarve
+dont starve => dontstarve
+guild wars => guildwars
+old school runescape => osrs
+the elder scrolls => elderscrolls
+elder scrolls => elderscrolls
+metal gear solid => metalgearsolid
+resident evil => residentevil
+street fighter => streetfighter
+mortal kombat => mortalkombat
+half life => halflife
+nintendo switch => nintendoswitch
+playstation 5 => ps5
+playstation 4 => ps4
+xbox series x => xboxseriesx
+xbox one => xboxone
+game boy => gameboy
+steam deck => steamdeck
+epic games => epicgames
+electronic arts => ea
+square enix => squareenix
