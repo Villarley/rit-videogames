@@ -122,6 +122,10 @@ class Datos:
     def mostrados(self, cid: int):
         return self.cn.execute("SELECT * FROM mostrados WHERE corrida_id = ? ORDER BY rango", (cid,)).fetchall()
 
+    def fue_mostrado(self, cid: int, page_id: int) -> bool:
+        return self.cn.execute("SELECT 1 FROM mostrados WHERE corrida_id = ? AND page_id = ?",
+                               (cid, page_id)).fetchone() is not None
+
     def juzgar(self, cid: int, page_id: int, relevancia: int, conocido: bool = False) -> None:
         self._ejecutar(
             "INSERT INTO juicios (corrida_id, page_id, relevancia, conocido, ts) VALUES (?,?,?,?,?) "

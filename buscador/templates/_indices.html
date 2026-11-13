@@ -1,0 +1,14 @@
+{% macro selector(opciones, seleccionado) %}
+  <fieldset class="selector-indice">
+    <legend>Índice de búsqueda</legend>
+    <div class="indices-opciones">
+      {% set etiquetas = {"completo": "Completo", "basico": "Básico", "stop": "Sin palabras comunes"} %}
+      {% for nombre, listo in opciones %}
+      <label class="indice-opcion">
+        <input type="radio" name="indice" value="{{ nombre }}" {% if nombre == seleccionado %}checked{% endif %} {% if not listo %}disabled{% endif %}>
+        <span>{{ etiquetas.get(nombre, nombre) }}{% if not listo %}<small>En preparación</small>{% endif %}</span>
+      </label>
+      {% endfor %}
+    </div>
+  </fieldset>
+{% endmacro %}

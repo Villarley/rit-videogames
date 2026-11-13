@@ -1,17 +1,19 @@
 {% extends "base.html" %}
+{% from "_indices.html" import selector %}
 {% block titulo %}{{ q ~ ' - ' if q }}gameCrawlers{% endblock %}
-{% macro formulario(grande) %}
+{% macro formulario() %}
 <form class="busqueda" action="{{ url_for('buscar') }}" method="get">
-  <input type="text" name="q" value="{{ q }}" placeholder="Buscá un juego, un jefe, una fecha..." autofocus>
+  <div class="busqueda-fila">
+  <input aria-label="Consulta de videojuegos" type="text" name="q" value="{{ q }}" placeholder="Buscá un juego, un jefe, una fecha...">
   <button type="submit">Buscar</button>
-  <div class="opciones" style="flex-basis: 100%">
-    <label>Índice
-      <select name="indice">
-        {% for i in indices %}<option value="{{ i }}" {{ 'selected' if i == indice }}>{{ i }}</option>{% endfor %}
-      </select>
-    </label>
+  </div>
+  <details class="opciones-busqueda" {{ "open" if rocchio or indice != por_defecto }}>
+    <summary>Opciones de búsqueda</summary>
+  <div class="opciones">
+    {{ selector(opciones_indice, indice) }}
     <label><input type="checkbox" name="rocchio" value="1" {{ 'checked' if rocchio }}> Mejorar con los juicios (Rocchio)</label>
   </div>
+  </details>
 </form>
 {% endmacro %}
 {% block cuerpo %}
@@ -19,19 +21,24 @@
 <main>
   <div class="portada">
     <h1>game<span>Crawlers</span></h1>
-    <p>Buscador temático de videojuegos</p>
+    <p>Encuentra guías, reseñas y datos sobre tus juegos.</p>
   </div>
-  {{ formulario(true) }}
-  <div class="ayuda">
+  {{ formulario() }}
+  <div class="ejemplos"><span>Prueba con</span>
+    {% for ejemplo in ("Zelda", "Malenia Elden Ring", "Poción de Minecraft") %}
+    <a class="chip" href="{{ url_for('buscar', q=ejemplo, indice=indice) }}">{{ ejemplo }}</a>
+    {% endfor %}
+  </div>
+  <details class="ayuda"><summary>Cómo usar filtros y frases</summary><p>
     Operadores: <code>+jefe</code> obligatorio, <code>-dlc</code> excluir, <code>site:minecraft.wiki</code>,
     <code>-site:kotaku.com</code>, <code>idioma:es</code>, <code>fuente:scrapy</code>, <code>"vuelo supremo"</code> frase exacta,
     <code>zeld*</code> palabras que empiezan así. Las fechas se pueden escribir
-    como quieras: <code>5 de octubre de 2023</code> encuentra "Oct 5, 2023".
-  </div>
+    en varios formatos: <code>5 de octubre de 2023</code> encuentra "Oct 5, 2023" con los índices stop y completo.</p>
+  </details>
 </main>
 {% else %}
 <main>
-  {{ formulario(false) }}
+  {{ formulario() }}
   {% if r.sugerencia %}
   <div class="aviso">¿Quisiste decir <a href="{{ url_for('buscar', q=r.sugerencia, indice=indice) }}"><b>{{ r.sugerencia }}</b></a>?</div>
   {% endif %}
@@ -41,32 +48,40 @@
     {% for t, w in r.expansion %}<span class="chip">{{ t }}</span> {% endfor %}
   </div>
   {% endif %}
+  <div class="resultados-cabecera">
   <div class="resumen">
     {% if r.total_aprox %}unos {% endif %}{{ "{:,}".format(r.total) }} resultados en {{ "%.1f"|format(r.ms) }} ms · índice {{ indice }}
-    {% if r.pesos %}· términos: {% for t, w in r.pesos.items() %}<span class="chip" title="peso {{ '%.3f'|format(w) }}">{{ t }}</span> {% endfor %}{% endif %}
+  </div>
+  {% if r.pesos or r.consulta.prefijos or r.consulta.frases or r.desconocidos %}
+  <details class="ayuda detalle-consulta"><summary>Detalles de la consulta</summary><p>
+    {% if r.pesos %}Términos: {% for t, w in r.pesos.items() %}<span class="chip" title="peso {{ '%.3f'|format(w) }}">{{ t }}</span> {% endfor %}{% endif %}
     {% for p, ts in r.consulta.prefijos.items() %}· {{ p }} → {{ ts|length }} términos{% endfor %}
     {% if r.consulta.frases %}· frase exacta{% endif %}
     {% if r.desconocidos %}· no están en el índice: {{ r.desconocidos|join(', ') }}{% endif %}
+  </p></details>
+  {% endif %}
   </div>
+  <div class="resultados-lista">
   {% for x in r.resultados %}
   <div class="resultado">
-    <div class="url">{{ x.url }}</div>
+    <div class="url" title="{{ x.url }}">{{ x.dominio or x.url }}</div>
     <h3><a href="{{ url_for('ir', consulta_id=consulta_id, rango=x.rango, page_id=x.page_id) }}" target="_blank" rel="noopener">{{ x.titulo }}</a></h3>
-    <div class="frag">{{ x.fragmento|safe }}</div>
-    <div class="meta"><span>#{{ x.rango }}</span><span>{{ x.dominio }}</span>{% if x.idioma %}<span>{{ x.idioma }}</span>{% endif %}<span>coseno {{ "%.4f"|format(x.puntaje) }}</span></div>
+    {% if x.fragmento %}<p class="frag">{{ x.fragmento|safe }}</p>{% endif %}
+    <div class="meta"><span>#{{ x.rango }}</span>{% if x.idioma %}<span>{{ x.idioma }}</span>{% endif %}<span title="Similitud de coseno">Coincidencia {{ "%.4f"|format(x.puntaje) }}</span></div>
   </div>
   {% else %}
-  <p>No hay resultados.</p>
+  <div class="aviso"><strong>No hay resultados en esta página.</strong> Prueba con menos palabras o quita algún filtro.</div>
   {% endfor %}
-  {% if paginas > 1 %}
-  <div class="paginas">
-    {% set ini = [1, pagina - 4]|max %}{% set fin = [paginas, ini + 9]|min %}
-    {% if pagina > 1 %}<a href="{{ url_for('buscar', q=q, indice=indice, p=pagina-1, rocchio='1' if rocchio else None) }}">‹</a>{% endif %}
-    {% for n in range(ini, fin + 1) %}
-      {% if n == pagina %}<span>{{ n }}</span>{% else %}<a href="{{ url_for('buscar', q=q, indice=indice, p=n, rocchio='1' if rocchio else None) }}">{{ n }}</a>{% endif %}
-    {% endfor %}
-    {% if pagina < paginas %}<a href="{{ url_for('buscar', q=q, indice=indice, p=pagina+1, rocchio='1' if rocchio else None) }}">›</a>{% endif %}
   </div>
+  {% if paginas > 1 %}
+  <nav class="paginas" aria-label="Páginas de resultados">
+    {% set ini = [1, pagina - 4]|max %}{% set fin = [paginas, ini + 9]|min %}
+    {% if pagina > 1 %}<a href="{{ url_for('buscar', q=q, indice=indice, p=pagina-1, rocchio='1' if rocchio else None) }}" aria-label="Página anterior">‹</a>{% endif %}
+    {% for n in range(ini, fin + 1) %}
+      {% if n == pagina %}<span aria-current="page">{{ n }}</span>{% else %}<a href="{{ url_for('buscar', q=q, indice=indice, p=n, rocchio='1' if rocchio else None) }}">{{ n }}</a>{% endif %}
+    {% endfor %}
+    {% if pagina < paginas %}<a href="{{ url_for('buscar', q=q, indice=indice, p=pagina+1, rocchio='1' if rocchio else None) }}" aria-label="Página siguiente">›</a>{% endif %}
+  </nav>
   {% endif %}
 </main>
 {% endif %}

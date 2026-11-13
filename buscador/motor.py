@@ -17,6 +17,7 @@ import sqlite3
 import time
 from collections import Counter
 from dataclasses import dataclass, field
+from functools import lru_cache
 from pathlib import Path
 from urllib.parse import urlparse
 
@@ -78,6 +79,7 @@ class Motor:
         self.politica = politica_desde_texto(self.ix.conf, RAIZ_REPO)
         self.nombre = self.politica.nombre
         self.analizador = Analizador(self.politica)
+        self._terminos_palabra = lru_cache(maxsize=8192)(self._analizar_palabra)
         conf = _conf_dict(self.ix.conf)
         self.base = Path(base) if base else _resolver(conf.get("coleccion", {}).get("base", "repository/crawl.db"))
         self.raiz = Path(raiz_textos) if raiz_textos else _resolver(conf.get("coleccion", {}).get("raiz", "repository"))
@@ -258,22 +260,28 @@ class Motor:
 
         puntajes = np.zeros(self.ix.N, dtype=np.float64)
         tocados = np.zeros(self.ix.N, dtype=bool)
+        obligatorios = dict.fromkeys(c.obligatorios)
+        listas_obligatorias = {}
         for t, w_q in pesos.items():
             if w_q <= 0:
                 continue
             docs, tfs = self.ix.postings(ids[t])
+            if t in obligatorios:
+                listas_obligatorias[t] = docs
             w_d = (1 + np.log2(tfs.astype(np.float64))) * self.idf[ids[t]]
             puntajes[docs] += w_q * w_d
             tocados[docs] = True
-        con_norma = self.normas > 0
-        puntajes[con_norma] /= self.normas[con_norma] * norma_q
-
         candidatos = tocados
-        for t in c.obligatorios:
-            i = ids.get(t, self.ix.buscar(t))
-            m = np.zeros(self.ix.N, dtype=bool)
-            if i >= 0:
-                m[self.ix.postings(i)[0]] = True
+        for t in obligatorios:
+            docs = listas_obligatorias.get(t)
+            if docs is None:
+                i = ids[t] if t in ids else self.ix.buscar(t)
+                if i < 0:
+                    candidatos[:] = False
+                    break
+                docs = self.ix.postings(i)[0]
+            m = np.zeros_like(candidatos)
+            m[docs] = True
             candidatos &= m
         for t in c.excluidos:
             i = self.ix.buscar(t)
@@ -287,6 +295,9 @@ class Motor:
                 candidatos &= filtro
         idx = np.flatnonzero(candidatos)
         total = int(idx.size)
+        normas = self.normas[idx]
+        con_norma = normas > 0
+        puntajes[idx[con_norma]] /= normas[con_norma] * norma_q
         total_aprox = False
         if c.frases and total:
             # El índice no guarda posiciones (para que pese menos), así que la
@@ -349,22 +360,23 @@ class Motor:
                 r.fragmento = self.fragmento(self.raiz / f["text_path"], terminos)
 
     # --- fragmento con los términos resaltados
+    def _analizar_palabra(self, palabra: str) -> tuple[str, ...]:
+        return tuple(self.analizador.analizar(palabra))
+
     def fragmento(self, ruta: Path, terminos: set[str], ancho: int = 32) -> str:
         try:
-            texto = ruta.read_text(encoding="utf-8", errors="replace")[:200_000]
+            with ruta.open(encoding="utf-8", errors="replace") as archivo:
+                texto = archivo.read(200_000)
         except OSError:
             return ""
         palabras = texto.split()
         if not palabras:
             return ""
-        coincide = np.zeros(len(palabras), dtype=np.int32)
         cache: dict[str, bool] = {}
-        for i, p in enumerate(palabras):
-            v = cache.get(p)
-            if v is None:
-                v = cache[p] = bool(terminos.intersection(self.analizador.analizar(p)))
-            coincide[i] = v
-        if coincide.any():
+        if terminos:
+            cache = {p: not terminos.isdisjoint(self._terminos_palabra(p)) for p in dict.fromkeys(palabras)}
+        if any(cache.values()):
+            coincide = np.fromiter((cache[p] for p in palabras), dtype=np.int32, count=len(palabras))
             ventana = np.convolve(coincide, np.ones(ancho, dtype=np.int32), mode="valid") if len(palabras) >= ancho else coincide
             ini = int(np.argmax(ventana))
         else:

@@ -2,54 +2,85 @@
 {% block titulo %}Evaluando - gameCrawlers{% endblock %}
 {% block cuerpo %}
 <main>
-  <div class="necesidad">
-    <div class="chip">Evalúa {{ c.evaluador }} · índice {{ c.indice }}</div>
-    {% if necesidad %}<h2 style="margin: 8px 0 4px">{{ necesidad.titulo }}</h2><p style="margin: 0">{{ necesidad.descripcion }}</p>{% endif %}
-    <p style="margin: 8px 0 0; color: var(--suave)">Consulta: "{{ c.consulta }}" · {{ "{:,}".format(c.total or 0) }} resultados</p>
+  <div class="pagina-encabezado">
+    <p class="sobrelinea">Evalúa {{ c.evaluador }} · índice {{ c.indice }}</p>
+    <h1>{{ necesidad.titulo if necesidad else c.consulta }}</h1>
+    {% if necesidad %}<p>{{ necesidad.descripcion }}</p>{% endif %}
+    <p class="suave">Consulta: «{{ c.consulta }}»</p>
   </div>
-  <div class="progreso"><div id="barra" style="width: {{ (100 * juicios|length / (resultados|length or 1))|round }}%"></div></div>
-  <p id="cuenta" style="color: var(--suave); font-size: 14px">{{ juicios|length }} de {{ resultados|length }} juzgados</p>
+  <div class="panel panel-progreso">
+    <label id="cuenta" for="avance" aria-live="polite">{{ juicios|length }} de {{ resultados|length }} juzgados</label>
+    <progress id="avance" value="{{ juicios|length }}" max="{{ resultados|length or 1 }}"></progress>
+    <p class="suave">Cada valoración se guarda al seleccionarla.</p>
+  </div>
+  <div class="resultados-lista">
   {% for x in resultados %}
-  <div class="resultado">
-    <div class="url">{{ x.url }}</div>
-    <h3><a href="{{ x.url }}" target="_blank" rel="noopener">{{ x.titulo }}</a></h3>
-    <div class="frag">{{ x.fragmento|safe }}</div>
+  <article class="resultado">
+    <div class="url"><span class="chip">#{{ x.rango }}</span> {{ x.url.split('/')[2] if '://' in x.url else x.url }}</div>
+    <h2><a href="{{ x.url }}" target="_blank" rel="noopener">{{ x.titulo }}</a></h2>
+    {% if x.fragmento %}<p class="frag">{{ x.fragmento|safe }}</p>{% endif %}
     <div class="juicio" data-page="{{ x.page_id }}">
       {% set j = juicios.get(x.page_id) %}
-      <button data-rel="2" class="{{ 'sel' if j == 2 }}">Muy relevante</button>
-      <button data-rel="1" class="{{ 'sel' if j == 1 }}">Algo relevante</button>
-      <button data-rel="0" class="{{ 'sel' if j == 0 }}">No relevante</button>
-      <label class="meta conocido" title="Para cobertura y novedad: ¿ya sabías de esta página antes de esta búsqueda?">
-        <input type="checkbox" {{ 'checked' if x.page_id in conocidos }}> ya la conocía</label>
-      <span class="meta">#{{ x.rango }}</span>
+      <div class="juicio-opciones" role="group" aria-label="Relevancia del resultado {{ x.rango }}">
+        {% for valor, nombre in ((2, 'Muy relevante'), (1, 'Algo relevante'), (0, 'No relevante')) %}
+        <button type="button" data-rel="{{ valor }}" class="{{ 'sel' if j == valor }}" aria-pressed="{{ 'true' if j == valor else 'false' }}">{{ nombre }}</button>
+        {% endfor %}
+      </div>
+      <label class="conocido"><input type="checkbox" {{ 'checked' if x.page_id in conocidos }}> ya la conocía</label>
+      <small class="estado-juicio" role="status">{{ 'Guardado' if j is not none else 'Sin valorar' }}</small>
     </div>
-  </div>
+  </article>
+  {% else %}
+  <div class="aviso">No se encontraron resultados para valorar. Puedes elegir otra tarea o reformular la consulta.</div>
   {% endfor %}
-  <p><a class="boton" href="{{ url_for('evaluar') }}">Evaluar otra necesidad</a>
-     <a href="{{ url_for('ver_metricas') }}" style="margin-left: 12px">Ver métricas</a></p>
+  </div>
+  <div class="acciones">
+    <a class="boton" href="{{ url_for('evaluar') }}">Evaluar otra necesidad</a>
+    <a class="boton secundario" href="{{ url_for('ver_metricas') }}">Ver métricas</a>
+  </div>
 </main>
 <script>
 const total = {{ resultados|length }};
+const avance = document.getElementById('avance');
+const cuenta = document.getElementById('cuenta');
 document.querySelectorAll('.juicio').forEach(caja => {
-  const marca = caja.querySelector('input[type=checkbox]');
-  const guardar = async (rel) => {
-    const r = await fetch('{{ url_for("juicio") }}', {method: 'POST', headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({corrida: {{ c.id }}, page_id: Number(caja.dataset.page), relevancia: rel, conocido: marca.checked})});
-    if (!r.ok) { alert('No se pudo guardar el juicio'); return null; }
-    return r.json();
-  };
+  const marca = caja.querySelector('input');
+  const botones = [...caja.querySelectorAll('button')];
+  const estado = caja.querySelector('[role=status]');
+  let guardado = marca.checked;
+  async function guardar(boton) {
+    const conocido = marca.checked;
+    const controles = [...botones, marca];
+    controles.forEach(c => c.disabled = true);
+    estado.textContent = 'Guardando…';
+    try {
+      const respuesta = await fetch({{ url_for('juicio')|tojson }}, {
+        method: 'POST', headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({corrida: {{ c.id }}, page_id: Number(caja.dataset.page),
+          relevancia: Number(boton.dataset.rel), conocido})
+      });
+      if (!respuesta.ok) throw new Error('No se guardó');
+      const datos = await respuesta.json();
+      botones.forEach(b => {
+        b.classList.toggle('sel', b === boton);
+        b.setAttribute('aria-pressed', String(b === boton));
+      });
+      guardado = conocido;
+      avance.value = Math.max(avance.value, datos.juzgados);
+      cuenta.textContent = avance.value + ' de ' + total + ' juzgados';
+      estado.textContent = 'Guardado';
+    } catch {
+      marca.checked = guardado;
+      estado.textContent = 'No se guardó. Vuelve a intentarlo.';
+    } finally {
+      controles.forEach(c => c.disabled = false);
+    }
+  }
   marca.addEventListener('change', () => {
-    const sel = caja.querySelector('button.sel');
-    if (sel) guardar(Number(sel.dataset.rel));   // si todavía no hay juicio, se manda con el próximo clic
+    const elegido = caja.querySelector('button.sel');
+    if (elegido) guardar(elegido);
   });
-  caja.querySelectorAll('button').forEach(b => b.addEventListener('click', async () => {
-    const d = await guardar(Number(b.dataset.rel));
-    if (!d) return;
-    caja.querySelectorAll('button').forEach(x => x.classList.remove('sel'));
-    b.classList.add('sel');
-    document.getElementById('cuenta').textContent = d.juzgados + ' de ' + total + ' juzgados';
-    document.getElementById('barra').style.width = (100 * d.juzgados / total) + '%';
-  }));
+  botones.forEach(b => b.addEventListener('click', () => guardar(b)));
 });
 </script>
 {% endblock %}

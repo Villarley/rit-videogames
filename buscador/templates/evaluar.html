@@ -1,31 +1,41 @@
 {% extends "base.html" %}
+{% from "_indices.html" import selector %}
 {% block titulo %}Evaluar - gameCrawlers{% endblock %}
 {% block cuerpo %}
 <main>
-  <h2>Modo evaluación</h2>
-  <p>Escogé una necesidad de información (o escribí tu propia consulta). Vas a ver los primeros 10 resultados y para cada uno
-     marcás si es muy relevante, algo relevante o no relevante. Con eso se calculan las métricas.</p>
-  {% if error %}<div class="aviso">{{ error }}</div>{% endif %}
-  <form method="post" action="{{ url_for('nueva_corrida') }}">
-    <fieldset>
-      <legend>Quién evalúa</legend>
-      <input type="text" name="evaluador" value="{{ evaluador }}" placeholder="Tu nombre" required style="width: 100%">
-    </fieldset>
-    <fieldset>
-      <legend>Necesidad de información</legend>
+  <div class="pagina-encabezado">
+    <p class="sobrelinea">Evaluación de resultados</p>
+    <h1>¿Te sirvieron los resultados?</h1>
+    <p>Elige una tarea y valora los primeros diez resultados según lo que estabas buscando.</p>
+  </div>
+  {% if error %}<div class="aviso" role="alert">{{ error }}</div>{% endif %}
+  <form class="panel formulario-evaluacion" method="post" action="{{ url_for('nueva_corrida') }}">
+    <label for="evaluador">Tu alias</label>
+    <input id="evaluador" name="evaluador" value="{{ evaluador }}" placeholder="Ej. Jugador 1" maxlength="80" required>
+    <label for="necesidad">¿Qué quieres encontrar?</label>
+    <select id="necesidad" name="necesidad" aria-describedby="criterio">
       {% for n in necesidades %}
-      <label class="opcion"><input type="radio" name="necesidad" value="{{ n.id }}" {{ 'checked' if loop.first }}>
-        <b>{{ n.titulo }}</b><small>{{ n.descripcion }} Consulta: "{{ n.consulta }}"</small></label>
+      <option value="{{ n.id }}" data-descripcion="{{ n.descripcion }}" {{ 'selected' if seleccion == n.id or (not seleccion and not consulta and loop.first) }}>{{ n.titulo }}</option>
       {% endfor %}
-      <label class="opcion"><input type="radio" name="necesidad" value=""> <b>Otra</b><small>Escribí la consulta abajo.</small></label>
-      <input type="text" name="consulta" placeholder="Consulta propia (opcional si escogiste una necesidad)" style="width: 100%; margin-top: 8px">
-    </fieldset>
-    <fieldset>
-      <legend>Índice</legend>
-      <select name="indice">{% for i in indices %}<option value="{{ i }}" {{ 'selected' if i == indice }}>{{ i }}</option>{% endfor %}</select>
-      <small style="color: var(--suave)">Evaluar la misma necesidad con varios índices permite comparar las políticas de normalización.</small>
-    </fieldset>
+      <option value="" {{ 'selected' if not seleccion and consulta }}>Otra búsqueda</option>
+    </select>
+    <p class="criterio" id="criterio"></p>
+    <div id="consulta-personalizada">
+      <label for="consulta">Consulta propia <span class="suave">(opcional con una tarea)</span></label>
+      <input id="consulta" name="consulta" value="{{ consulta }}" placeholder="Ej. Mejor build de mago en Elden Ring" maxlength="300">
+    </div>
+    {{ selector(opciones_indice, indice) }}
     <button type="submit">Empezar a evaluar</button>
   </form>
 </main>
+<script>
+const tarea = document.getElementById('necesidad');
+const consulta = document.getElementById('consulta');
+function mostrarCriterio() {
+  document.getElementById('criterio').textContent = tarea.selectedOptions[0]?.dataset.descripcion || 'Escribe la consulta que quieres evaluar.';
+  consulta.required = !tarea.value;
+}
+tarea.addEventListener('change', mostrarCriterio);
+mostrarCriterio();
+</script>
 {% endblock %}

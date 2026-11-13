@@ -3,27 +3,37 @@
 {% block cuerpo %}
 {% macro num(v) %}{{ "%.3f"|format(v) if v is not none else "–" }}{% endmacro %}
 <main class="ancho">
-  <h2>Métricas</h2>
-  <p style="color: var(--suave)">Calculadas sobre el ranking exacto que vio cada persona en el modo evaluación. Un resultado sin juicio
-     cuenta como no relevante. R (para MAP, R-precisión y F) son los relevantes distintos conocidos de cada necesidad, juntando a todos los evaluadores. Cobertura y novedad usan lo que cada persona marcó como "ya la conocía".
-     <a href="{{ url_for('exportar') }}">Exportar juicios (JSON)</a> · <a href="{{ url_for('corridas_csv') }}">Corridas (CSV)</a></p>
-
-  <div class="tarjetas">
-    {% set g = m.global %}
-    <div class="tarjeta"><div class="valor">{{ "%.3f"|format(g['MAP']) }}</div><div class="nombre">MAP</div></div>
-    <div class="tarjeta"><div class="valor">{{ "%.3f"|format(g['P@5']) }}</div><div class="nombre">P@5</div></div>
-    <div class="tarjeta"><div class="valor">{{ "%.3f"|format(g['P@10']) }}</div><div class="nombre">P@10</div></div>
-    <div class="tarjeta"><div class="valor">{{ "%.3f"|format(g['MRR']) }}</div><div class="nombre">MRR</div></div>
-    <div class="tarjeta"><div class="valor">{{ "%.3f"|format(g['nDCG@10']) }}</div><div class="nombre">nDCG@10</div></div>
-    <div class="tarjeta"><div class="valor">{{ "%.3f"|format(g['R-prec']) }}</div><div class="nombre">R-precisión</div></div>
-    <div class="tarjeta"><div class="valor">{{ "%.3f"|format(g['F@10']) }}</div><div class="nombre">F@10</div></div>
-    <div class="tarjeta"><div class="valor">{{ num(g.cobertura) }}</div><div class="nombre">cobertura</div></div>
-    <div class="tarjeta"><div class="valor">{{ num(g.novedad) }}</div><div class="nombre">novedad</div></div>
-    <div class="tarjeta"><div class="valor">{{ g.corridas }}</div><div class="nombre">corridas evaluadas</div></div>
-    <div class="tarjeta"><div class="valor">{{ m.juicios_total }}</div><div class="nombre">juicios</div></div>
-    <div class="tarjeta"><div class="valor">{{ m.por_evaluador|length }}</div><div class="nombre">evaluadores</div></div>
+  {% set g = m.global %}
+  <div class="pagina-encabezado">
+    <p class="sobrelinea">Evaluación del buscador</p>
+    <h1>Métricas de búsqueda</h1>
+    <p>Revisa qué tan útiles fueron los resultados y descarga los datos para el informe.</p>
+    <div class="acciones"><a class="boton secundario" href="{{ url_for('exportar') }}">Exportar juicios (JSON)</a>
+    <a class="boton secundario" href="{{ url_for('corridas_csv') }}">Corridas (CSV)</a></div>
   </div>
-
+  <div class="tarjetas">
+    {% for valor, etiqueta in ((g.corridas, "Evaluaciones"), (m.juicios_total, "Valoraciones"), (m.por_evaluador|length, "Evaluadores")) %}
+    <div class="tarjeta"><div class="valor">{{ valor }}</div><div class="nombre">{{ etiqueta }}</div></div>
+    {% endfor %}
+  </div>
+  {% if g.corridas %}
+  <div class="tarjetas">
+    {% for clave, etiqueta in (("P@10", "Precisión en los primeros 10"), ("MAP", "Precisión promedio"), ("nDCG@10", "Calidad del orden")) %}
+    <div class="tarjeta"><div class="valor">{{ num(g[clave]) }}</div><div class="nombre">{{ etiqueta }} · {{ clave }}</div></div>
+    {% endfor %}
+  </div>
+  <details class="panel metricas-detalle"><summary>Más métricas y cómo se calculan</summary>
+    <p class="suave">Un resultado sin juicio cuenta como no relevante. R es la cantidad de resultados relevantes conocidos para una necesidad. Cobertura y novedad usan la marca «Ya la conocía».</p>
+    <div class="tarjetas">
+      {% for clave, etiqueta in (("P@5", "P@5"), ("MRR", "MRR"), ("R-prec", "R-precisión"), ("F@10", "F@10"), ("cobertura", "Cobertura"), ("novedad", "Novedad")) %}
+      <div class="tarjeta"><div class="valor">{{ num(g[clave]) }}</div><div class="nombre">{{ etiqueta }}</div></div>
+      {% endfor %}
+    </div>
+  </details>
+  {% else %}
+  <div class="aviso">Todavía no hay valoraciones. <a href="{{ url_for('evaluar') }}">Empieza una evaluación</a> para ver aquí los resultados.</div>
+  {% endif %}
+  {% if g.corridas or m.uso.consultas %}
   <div class="graficos">
     <div class="grafico"><h3>Métricas por índice (política de normalización)</h3><div class="lienzo"><canvas id="g_indices"></canvas></div></div>
     <div class="grafico"><h3>Precisión en k (k = 1..10)</h3><div class="lienzo"><canvas id="g_pk"></canvas></div></div>
@@ -34,7 +44,7 @@
     <div class="grafico"><h3>Consultas por día</h3><div class="lienzo"><canvas id="g_dias"></canvas></div></div>
   </div>
 
-  <h3 style="margin-top: 28px">Uso del buscador</h3>
+  <h2 class="seccion-titulo">Uso del buscador</h2>
   {% set u = m.uso %}
   <div class="tarjetas">
     <div class="tarjeta"><div class="valor">{{ u.consultas }}</div><div class="nombre">consultas</div></div>
@@ -47,8 +57,9 @@
     <div class="tarjeta"><div class="valor">{{ u.con_sugerencia }}</div><div class="nombre">con "¿quisiste decir?"</div></div>
   </div>
 
+  <details class="panel metricas-detalle"><summary>Tablas y desglose de resultados</summary>
   <h3>Por índice</h3>
-  <table>
+  <div class="tabla-scroll" tabindex="0" role="region" aria-label="Tabla de métricas"><table>
     <tr><th>Índice</th><th>Corridas</th><th>P@5</th><th>P@10</th><th>MAP</th><th>MRR</th><th>nDCG@10</th><th>R-prec</th><th>F@10</th><th>Cobertura</th><th>Novedad</th></tr>
     {% for k, v in m.por_indice.items() %}
     <tr><td>{{ k }}</td><td class="num">{{ v.corridas }}</td><td class="num">{{ "%.3f"|format(v['P@5']) }}</td><td class="num">{{ "%.3f"|format(v['P@10']) }}</td>
@@ -56,10 +67,10 @@
         <td class="num">{{ "%.3f"|format(v['R-prec']) }}</td><td class="num">{{ "%.3f"|format(v['F@10']) }}</td>
         <td class="num">{{ num(v.cobertura) }}</td><td class="num">{{ num(v.novedad) }}</td></tr>
     {% endfor %}
-  </table>
+  </table></div>
 
   <h3>Por necesidad</h3>
-  <table>
+  <div class="tabla-scroll" tabindex="0" role="region" aria-label="Tabla de métricas"><table>
     <tr><th>Necesidad</th><th>Corridas</th><th>P@5</th><th>P@10</th><th>MAP</th><th>MRR</th><th>nDCG@10</th><th>R-prec</th><th>F@10</th><th>Cobertura</th><th>Novedad</th></tr>
     {% for k, v in m.por_necesidad.items() %}
     <tr><td>{{ k }}</td><td class="num">{{ v.corridas }}</td><td class="num">{{ "%.3f"|format(v['P@5']) }}</td><td class="num">{{ "%.3f"|format(v['P@10']) }}</td>
@@ -67,69 +78,74 @@
         <td class="num">{{ "%.3f"|format(v['R-prec']) }}</td><td class="num">{{ "%.3f"|format(v['F@10']) }}</td>
         <td class="num">{{ num(v.cobertura) }}</td><td class="num">{{ num(v.novedad) }}</td></tr>
     {% endfor %}
-  </table>
+  </table></div>
 
   <h3>Acuerdo entre evaluadores (kappa de Cohen)</h3>
   {% if m.acuerdo %}
-  <table>
+  <div class="tabla-scroll" tabindex="0" role="region" aria-label="Tabla de métricas"><table>
     <tr><th>Evaluador A</th><th>Evaluador B</th><th>Documentos en común</th><th>Kappa</th></tr>
     {% for a in m.acuerdo %}
     <tr><td>{{ a.a }}</td><td>{{ a.b }}</td><td class="num">{{ a.pares }}</td><td class="num">{{ "%.3f"|format(a.kappa) }}</td></tr>
     {% endfor %}
-  </table>
+  </table></div>
   {% else %}
   <p style="color: var(--suave)">Hace falta que dos personas evalúen la misma necesidad para calcularlo.</p>
   {% endif %}
 
   <h3>Por evaluador</h3>
-  <table>
+  <div class="tabla-scroll" tabindex="0" role="region" aria-label="Tabla de métricas"><table>
     <tr><th>Evaluador</th><th>Corridas</th><th>Juicios</th><th>P@10</th><th>MAP</th></tr>
     {% for k, v in m.por_evaluador.items() %}
     <tr><td>{{ k }}</td><td class="num">{{ v.corridas }}</td><td class="num">{{ v.juicios }}</td><td class="num">{{ "%.3f"|format(v['P@10']) }}</td><td class="num">{{ "%.3f"|format(v['MAP']) }}</td></tr>
     {% endfor %}
-  </table>
+  </table></div>
 
   <h3>Consultas más frecuentes</h3>
-  <table>
+  <div class="tabla-scroll" tabindex="0" role="region" aria-label="Tabla de métricas"><table>
     <tr><th>Consulta</th><th>Veces</th></tr>
     {% for q, n in u.mas_buscadas %}<tr><td>{{ q }}</td><td class="num">{{ n }}</td></tr>{% endfor %}
-  </table>
+  </table></div>
+  </details>
+  {% endif %}
 </main>
+{% if g.corridas or m.uso.consultas %}
 <script src="{{ url_for('static', filename='chart.umd.js') }}"></script>
 <script>
 const M = {{ m|tojson }};
 const css = getComputedStyle(document.documentElement);
 Chart.defaults.color = css.getPropertyValue('--suave').trim();
 Chart.defaults.maintainAspectRatio = false;
+Chart.defaults.animation = false;
 Chart.defaults.borderColor = css.getPropertyValue('--borde').trim();
 const colores = ['#4b3fd6', '#1d7a46', '#b7791f', '#b23b3b', '#2b8fbf', '#8a3fb0'];
 const metricas = ['P@5', 'P@10', 'MAP', 'MRR', 'nDCG@10', 'R-prec', 'F@10'];
 const lim = {y: {min: 0, max: 1}};
 
 const indices = Object.keys(M.por_indice);
-new Chart(g_indices, {type: 'bar', data: {labels: metricas, datasets: indices.map((k, i) => ({
+new Chart(document.getElementById('g_indices'), {type: 'bar', data: {labels: metricas, datasets: indices.map((k, i) => ({
   label: k, data: metricas.map(x => M.por_indice[k][x]), backgroundColor: colores[i % colores.length]}))},
   options: {scales: lim}});
 
-new Chart(g_pk, {type: 'line', data: {labels: [1,2,3,4,5,6,7,8,9,10], datasets: Object.entries(M.curva_p_en_k).map(([k, v], i) => ({
+new Chart(document.getElementById('g_pk'), {type: 'line', data: {labels: [1,2,3,4,5,6,7,8,9,10], datasets: Object.entries(M.curva_p_en_k).map(([k, v], i) => ({
   label: k, data: v, borderColor: colores[i % colores.length], tension: .2}))}, options: {scales: lim}});
 
-new Chart(g_rp, {type: 'line', data: {labels: [0,.1,.2,.3,.4,.5,.6,.7,.8,.9,1], datasets: Object.entries(M.recall_precision).map(([k, v], i) => ({
+new Chart(document.getElementById('g_rp'), {type: 'line', data: {labels: [0,.1,.2,.3,.4,.5,.6,.7,.8,.9,1], datasets: Object.entries(M.recall_precision).map(([k, v], i) => ({
   label: k, data: v, borderColor: colores[i % colores.length], tension: .2}))},
   options: {scales: {...lim, x: {title: {display: true, text: 'recall'}}}}});
 
 const nec = Object.keys(M.por_necesidad);
-new Chart(g_necesidades, {type: 'bar', data: {labels: nec, datasets: ['P@10', 'MAP', 'nDCG@10'].map((x, i) => ({
+new Chart(document.getElementById('g_necesidades'), {type: 'bar', data: {labels: nec, datasets: ['P@10', 'MAP', 'nDCG@10'].map((x, i) => ({
   label: x, data: nec.map(k => M.por_necesidad[k][x]), backgroundColor: colores[i]}))}, options: {scales: lim}});
 
 const rel = M.distribucion_relevancia;
-new Chart(g_rel, {type: 'doughnut', data: {labels: ['No relevante', 'Algo relevante', 'Muy relevante'],
+new Chart(document.getElementById('g_rel'), {type: 'doughnut', data: {labels: ['No relevante', 'Algo relevante', 'Muy relevante'],
   datasets: [{data: [rel['0'] || 0, rel['1'] || 0, rel['2'] || 0], backgroundColor: ['#b23b3b', '#b7791f', '#1d7a46']}]}});
 
 const cl = M.uso.clics_por_rango;
-new Chart(g_clics, {type: 'bar', data: {labels: Object.keys(cl), datasets: [{label: 'clics', data: Object.values(cl), backgroundColor: colores[0]}]}});
+new Chart(document.getElementById('g_clics'), {type: 'bar', data: {labels: Object.keys(cl), datasets: [{label: 'clics', data: Object.values(cl), backgroundColor: colores[0]}]}});
 
 const dias = M.uso.por_dia;
-new Chart(g_dias, {type: 'line', data: {labels: Object.keys(dias), datasets: [{label: 'consultas', data: Object.values(dias), borderColor: colores[1], fill: false}]}});
+new Chart(document.getElementById('g_dias'), {type: 'line', data: {labels: Object.keys(dias), datasets: [{label: 'consultas', data: Object.values(dias), borderColor: colores[1], fill: false}]}});
 </script>
+{% endif %}
 {% endblock %}

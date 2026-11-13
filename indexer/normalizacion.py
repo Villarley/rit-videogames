@@ -58,6 +58,7 @@ _RE_ISO = re.compile(PATRON_ISO)
 _RE_MES_DIA = re.compile(PATRON_MES_DIA)
 _RE_DIA_MES = re.compile(PATRON_DIA_MES, re.IGNORECASE)
 _RE_NUMERICA = re.compile(PATRON_NUMERICA)
+_RE_ANIO = re.compile(r"[0-9]{4}")
 
 
 def _fecha(anio: int, mes: int, dia: int) -> str | None:
@@ -92,6 +93,9 @@ def _numerica(m: re.Match) -> str:
 
 
 def normalizar_fechas(texto: str) -> str:
+    # Todos los formatos aceptados requieren cuatro dígitos consecutivos.
+    if not _RE_ANIO.search(texto):
+        return texto
     texto = _RE_ISO.sub(_iso, texto)
     texto = _RE_MES_DIA.sub(_mes_dia, texto)
     texto = _RE_DIA_MES.sub(_dia_mes, texto)
@@ -109,7 +113,8 @@ _RE_ORDINAL = re.compile(PATRON_ORDINAL, re.IGNORECASE)
 
 
 def normalizar_numeros(texto: str) -> str:
-    texto = _RE_MILES.sub("", texto)
+    if "," in texto:
+        texto = _RE_MILES.sub("", texto)
     return _RE_ORDINAL.sub(r"\1", texto)
 
 

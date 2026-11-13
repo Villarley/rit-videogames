@@ -8,12 +8,14 @@
 </head>
 <body>
   <header class="barra">
+    <div class="barra-interior">
     <a class="logo" href="{{ url_for('buscar') }}">game<span>Crawlers</span></a>
-    <nav>
+    <nav aria-label="Navegación principal">
       <a href="{{ url_for('buscar') }}" class="{{ 'activo' if request.endpoint == 'buscar' }}">Buscar</a>
       <a href="{{ url_for('evaluar') }}" class="{{ 'activo' if request.endpoint in ('evaluar', 'corrida', 'nueva_corrida') }}">Evaluar</a>
       <a href="{{ url_for('ver_metricas') }}" class="{{ 'activo' if request.endpoint == 'ver_metricas' }}">Métricas</a>
     </nav>
+    </div>
     {% block barra %}{% endblock %}
   </header>
   {% block cuerpo %}{% endblock %}
